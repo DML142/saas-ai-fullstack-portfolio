@@ -1,13 +1,18 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
+import { JwtAuthGuard } from './guards/jwt.auth.guard';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -40,9 +45,30 @@ export class AuthController {
     return rest;
   }
 
+  @Post('logout')
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const token = req.cookies['refreshToken'] as string | undefined;
+
+    if (!token) {
+      throw new UnauthorizedException();
+    }
+
+    await this.authService.logout(token);
+
+    res.clearCookie('refreshToken');
+
+    return true;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  me(@Req() req: Request) {
+    return req.user;
+  }
+
   @Post('login')
   async login(
-    @Body() body: { email: string; password: string },
+    @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { refreshToken, ...rest } = await this.authService.login(
@@ -57,7 +83,7 @@ export class AuthController {
 
   @Post('register')
   async register(
-    @Body() body: { email: string; password: string },
+    @Body() body: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { refreshToken, ...rest } = await this.authService.register(

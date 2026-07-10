@@ -74,6 +74,19 @@ export class AuthService {
     return this.issueToken(token.sub, token.familyId);
   }
 
+  async logout(token: string) {
+    const { jti, familyId } = this.jwtService.verify<RefreshTokenPayload>(
+      token,
+      {
+        secret: process.env.JWT_REFRESH_SECRET,
+      },
+    );
+
+    await this.redisService.del(`refresh:${jti}`);
+
+    await this.redisService.removeFromFamily(familyId, jti);
+  }
+
   async register(email: string, password: string) {
     const existingEmail = await this.prisma.user.findUnique({
       where: { email },
