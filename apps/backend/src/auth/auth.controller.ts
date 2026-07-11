@@ -13,6 +13,9 @@ import type { Response, Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt.auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { Role } from 'generated/prisma/enums';
 
 @Controller('auth')
 export class AuthController {
@@ -94,5 +97,12 @@ export class AuthController {
     this.setRefreshTokenCookie(res, refreshToken);
 
     return rest;
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin-check')
+  adminCheck(@Req() req: Request) {
+    return { message: 'You are admin!', user: req.user };
   }
 }

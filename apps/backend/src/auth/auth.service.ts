@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
+import { Role } from 'generated/prisma/enums';
 import { PasswordService } from 'src/password/password.service';
 import { PrismaService } from 'src/PrismaService';
 import { RedisService } from 'src/redis/redis.service';
@@ -24,9 +26,13 @@ export class AuthService {
     private prisma: PrismaService,
   ) {}
 
-  async issueToken(userId: string, familyId: string = randomUUID()) {
+  async issueToken(
+    userId: string,
+    role: Role,
+    familyId: string = randomUUID(),
+  ) {
     const accessToken = this.jwtService.sign(
-      { sub: userId },
+      { sub: userId, role },
       {
         secret: process.env.JWT_ACCESS_SECRET,
         expiresIn: Number(process.env.JWT_ACCESS_EXPIRES_IN),
@@ -71,7 +77,15 @@ export class AuthService {
     await this.redisService.del(`refresh:${token.jti}`);
     await this.redisService.removeFromFamily(token.familyId, token.jti);
 
-    return this.issueToken(token.sub, token.familyId);
+    const newUser = await this.prisma.user.findUnique({
+      where: { id: token.sub },
+    });
+
+    if (!newUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.issueToken(token.sub, newUser.role, token.familyId);
   }
 
   async logout(token: string) {
@@ -97,10 +111,16 @@ export class AuthService {
     const passwordHash = await this.passwordService.hash(password);
     const user = await this.prisma.user.create({
       data: { email, passwordHash },
-      select: { id: true, email: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
-    const token = await this.issueToken(user.id);
+    const token = await this.issueToken(user.id, user.role);
 
     return {
       accessToken: token.accessToken,
@@ -127,7 +147,7 @@ export class AuthService {
       throw new UnauthorizedException('Email or password is wrong');
     }
 
-    const token = await this.issueToken(user.id);
+    const token = await this.issueToken(user.id, user.role);
 
     const { passwordHash: _, ...safeUser } = user;
 
