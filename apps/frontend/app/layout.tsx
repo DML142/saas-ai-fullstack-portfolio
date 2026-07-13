@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Newsreader, Geist, Geist_Mono } from 'next/font/google';
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Navbar } from "@/components/layout/Navbar";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' });
@@ -26,7 +27,10 @@ export default function RootLayout({
       lang="en"
       className={cn("bg-bg", "text-ink", "h-full", "antialiased", newsreader.variable, "font-sans", geist.variable, geistMono.variable)}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }

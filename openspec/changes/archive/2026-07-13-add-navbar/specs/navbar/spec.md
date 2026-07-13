@@ -1,11 +1,22 @@
 ## ADDED Requirements
 
 ### Requirement: Persistent site navigation
-The system SHALL render a navigation bar containing the site logo, navigation links (Features, Pricing, FAQ), and a call-to-action button, present on every page via the root layout.
+The system SHALL render a navigation bar containing the site logo, navigation links (Home, Features, Reviews, Pricing), and auth-conditional controls, present on every page via the root layout.
 
 #### Scenario: Navbar present across routes
 - **WHEN** a user visits any page in the application
-- **THEN** the navbar (logo, links, CTA) is rendered above the page content, not re-implemented per-page
+- **THEN** the navbar (logo, links, auth controls) is rendered above the page content, not re-implemented per-page
+
+### Requirement: Auth-conditional right-side controls
+The navbar SHALL display different right-side controls depending on mocked auth state: logged-out users see Register and Login buttons; logged-in users see an "Open Chat" button and their name. A user avatar icon is always visible regardless of auth state.
+
+#### Scenario: Logged out
+- **WHEN** the mocked auth state reports the user as logged out
+- **THEN** the navbar shows Register and Login buttons, no user name, and the generic user avatar icon
+
+#### Scenario: Logged in
+- **WHEN** the mocked auth state reports the user as logged in
+- **THEN** the navbar shows an "Open Chat" button, the user's name (positioned left of the avatar), and the user avatar icon
 
 ### Requirement: Scroll-based background transition
 The navbar SHALL remain visible while scrolling (sticky positioning) and SHALL transition its background from transparent to a solid/blurred surface once the user scrolls past a threshold.

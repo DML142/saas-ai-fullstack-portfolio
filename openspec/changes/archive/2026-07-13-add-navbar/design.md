@@ -11,8 +11,8 @@
 - Deliberately plain relative to the hero: no chromatic aberration, no star field — matches the existing "dashboard skips heavy effects" precedent from `CLAUDE.md`.
 
 **Non-Goals:**
-- Auth-aware state (logged-in vs logged-out nav) — deferred until frontend auth exists.
-- The actual Features/Pricing/FAQ sections the nav links point to — separate future changes. Links use anchors (`#features` etc.) that simply don't scroll anywhere yet.
+- Real session verification — auth state is mocked on the frontend for this change (see Decisions); wiring to the actual backend session is a separate future change.
+- The actual Home/Features/Reviews/Pricing sections the nav links point to — separate future changes. Links use anchors (`#home` etc.) that simply don't scroll anywhere yet.
 
 ## Decisions
 
@@ -25,13 +25,16 @@ This is a simple boolean threshold (past N px of scroll, or not) driving a Tailw
 **Decision: Mobile menu is a simple conditional render + CSS transition, not a separate animation library.**
 A hamburger toggle flipping a boolean, with the menu panel sliding/fading in via Tailwind transition utilities — no need for GSAP or a dedicated menu library for something this standard.
 
-**Decision: This is routine/structural UI, not an effect-heavy piece — per `CLAUDE.md`'s Frontend Exception, tasks default to `[you implement]`.**
-Unlike the hero's `WordCycler`/`StarField`/`ChromaticAberration` (genuinely complex GSAP/SVG-filter work), a sticky nav with a scroll listener and a mobile toggle is standard, well-trodden UI — the kind of thing the Frontend Exception explicitly carves out as still the user's to build, with guidance rather than direct authorship.
+**Decision: AI-authored directly, per explicit request — normally this would default to `[you implement]`.**
+A sticky nav with a scroll listener and a mobile toggle is standard, well-trodden UI, not effect-heavy in the `WordCycler`/`StarField`/`ChromaticAberration` sense — the Frontend Exception would normally carve this out as user-implemented. Built directly here because it was explicitly requested, with full explanation of each piece as it's written.
+
+**Decision: Auth state comes from a placeholder `useAuth()` hook, hardcoded, not real session data.**
+Per explicit instruction: build the frontend UI for both auth states now, wire it to the real backend session later. `useAuth()` returns `{ isLoggedIn: boolean, user: { name: string } | null }` — today it's a hardcoded constant; later its internals get replaced with a real call to the backend's `/auth/me` (already built and verified in `add-user-auth`) or a shared auth context, without the Navbar itself needing to change, since it only ever consumes the hook's return shape, not how that data is obtained.
 
 ## Risks / Trade-offs
 
-- [Risk] Nav links pointing to anchors that don't exist yet (`#features`, `#pricing`, `#faq`) are effectively dead until those sections are built → Mitigation: acceptable and expected at this stage; syntactically correct anchors that "activate" once the target sections land in later changes.
-- [Trade-off] No auth-aware nav state means the CTA is generic ("Try COS Code" or similar) rather than context-aware ("Dashboard" for logged-in users) → Mitigation: explicitly deferred, revisit once frontend auth exists.
+- [Risk] Nav links pointing to anchors that don't exist yet (`#home`, `#features`, `#reviews`, `#pricing`) are effectively dead until those sections are built → Mitigation: acceptable and expected at this stage; syntactically correct anchors that "activate" once the target sections land in later changes.
+- [Risk] The hardcoded `useAuth()` mock could be forgotten and shipped as-is → Mitigation: named and commented explicitly as a placeholder; the interface is intentionally the exact shape real auth would need, minimizing rework, but this is worth flagging as a follow-up task explicitly in a future auth-integration change.
 
 ## Migration Plan
 
