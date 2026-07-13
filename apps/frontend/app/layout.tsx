@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Newsreader, Geist, Geist_Mono } from 'next/font/google';
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  variable: '--font-newsreader',
 });
 
 export const metadata: Metadata = {
@@ -25,7 +24,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn("bg-bg", "text-ink", "h-full", "antialiased", newsreader.variable, "font-sans", geist.variable, geistMono.variable)}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

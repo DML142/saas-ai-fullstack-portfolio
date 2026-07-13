@@ -158,6 +158,21 @@ Avoid tutorial-level solutions whenever possible.
 
 ---
 
+## Frontend Exception to Rules 1–5
+
+Rules 1–5 (explain-first, small examples only, I implement) apply fully to **backend** work.
+
+For **frontend** work specifically, the roles invert by explicit request:
+
+- The AI **may author** complex frontend code directly — animation timelines (GSAP), shader/filter plumbing (SVG filters, WebGL), `react-three-fiber` scenes, blend-mode choreography, and other effect-heavy implementation.
+- The AI must still **explain thoroughly** — why the technique was chosen, how it works, the performance/accessibility tradeoffs, and alternatives considered. Teaching does not stop; authorship shifts.
+- Structural and routine work (folder/route scaffolding, component wiring, standard forms, CRUD-ish UI) is still handed to me to implement, with the AI giving structure/guidance per the normal rules.
+- Rules 6 and 7 (teach production thinking, senior-level bar) still apply to all frontend code the AI writes.
+
+Backend rules (1–7) are unchanged and unaffected by this exception.
+
+---
+
 # Project Goal
 
 Build a modern AI SaaS Platform demonstrating:
@@ -383,45 +398,44 @@ Include:
 
 ---
 
-# Frontend Design
+# Frontend Design — COS Code
 
-The application should look modern.
+The landing page's job: look like something a team spent months on and was scared to ship because of performance risk — then prove it ships fine anyway. Unconventional but not noisy. Every effect below has a cheap, real implementation; none are decorative filler.
 
-Avoid excessive visual effects.
+## Identity
 
-Landing page:
+- **Product**: COS Code — `npm i -g coscode`, then `cos init` in a project. Auto-detects and wires in what an AI coding agent needs (MCP servers, Skills, `.md` context, OpenSpec, CodeRabbit, and other emerging agent-tooling conventions), asking the user only what it can't infer.
+- **Palette**: near-black background, white text, a single accent — cosmic purple. No other colors. No gradients-as-decoration.
+- **Typography**: Newsreader or a similar high-contrast serif for display/headline text. Restraint elsewhere.
+- **Principle**: simple at first glance, unconventional on contact. No Frutiger Aero-style clutter, no unnecessary chrome. The surprise is in behavior, not decoration.
 
-- elegant
-- minimal
-- premium
-- smooth GSAP animations
-- subtle Three.js hero section
-- responsive
+## Effect vocabulary (living list — expect additions)
 
-Dashboard:
+1. **Hero word-cycler**: `BUILD` stays fixed; the second word cycles — `FASTER → SAFER → SMARTER → FEARLESSLY` — via a vertical slide (word moves up and out, next word slides in from below), giving a sense of motion in and out of space. Text is white; individual letters occasionally stretch briefly on the Y-axis (a few ms) as a glitch-like accent.
+2. **Drifting stars**: simple rounded white stars drift right-to-left across the hero, one appearing roughly every 1–10s. Where a star overlaps the hero text, the overlapping pixels invert (white text → black) via `mix-blend-mode: difference` — no canvas readback, no per-pixel JS. This is the general technique for "same-color elements invert on contact" anywhere it recurs.
+3. **Chromatic aberration**: a subtle, constant (not interaction-driven) RGB channel-split via an SVG filter (`feOffset` + `feBlend`), scoped **only to the hero section** — not site-wide. Respects `prefers-reduced-motion`.
+4. **3D constellation** (below the hero, escalation of the star motif): a `react-three-fiber` node graph — nodes represent what `cos init` wires together (MCP, Skills, `.md`, OpenSpec, CodeRabbit, etc.), connected by cosmic-purple lines that light up on scroll/hover. Small, fixed node count (8–12) — illustrates the product's core trick instead of just listing features, and stays performant by staying scoped.
 
-Focus on usability.
+## Dashboard (COS Assistant)
 
-Avoid heavy WebGL.
+Usability-focused, same palette/brand but without the hero's heavy effect layer (no chromatic aberration, no 3D). A lightweight in-browser chat experience, gated by subscription tier — see Application Idea below for what it actually is and isn't.
 
 ---
 
 # Application Idea
 
-A modern AI SaaS Platform.
+**COS Code** — a CLI tool positioned as an automatic wrapper for AI coding agents.
 
-Users can:
+`npm i -g coscode`, then `cos init` in a project directory. It inspects the project and automatically selects/wires in the tooling an AI agent needs — MCP servers, Skills, `.md` context files, OpenSpec, CodeRabbit, and similar emerging conventions — asking the user only what it can't infer on its own.
 
-- create workspaces
-- create AI assistants
-- upload knowledge
-- manage subscriptions
-- organize conversations
-- receive notifications
+The site markets this CLI tool and hosts a companion SaaS layer around it:
 
-This is not intended to compete with ChatGPT.
+- **Subscription tiers** (Free / Pro / Business, via Stripe) gate advanced features and usage limits.
+- **COS Assistant** (dashboard) — a lightweight in-browser chat experience included with paid tiers, similar in spirit to Claude Desktop's chat/project switching or Google AI Studio. Users can create and switch between chats/workspaces, import/export projects.
+- **COS Assistant is a preview/demo concept, not a real AI product**: no LLM API is connected, no real code/IDE logic runs. A message is stored in the database, the server waits, then sends back a simulated reply — enough to demonstrate the full chat UX and plumbing (persistence, auth-gated access, possibly WebSockets) without pretending to be a functional AI assistant.
+- A **"workspace"** is a route or modal showing per-project state: usage limits, detected config/tool issues, remaining restarts/quota — not a literal coding environment.
 
-The purpose is to demonstrate architecture.
+This is not intended to compete with real AI coding tools or ChatGPT. The purpose is to demonstrate full-stack architecture and an exceptional frontend, using a coherent fictional product as the vehicle.
 
 ---
 
@@ -446,34 +460,25 @@ The purpose is to demonstrate architecture.
 
 ---
 
-## Dashboard
+## Dashboard (COS Assistant)
 
 - Sidebar
-- Workspace switcher
+- Chat/workspace switcher (Claude Desktop-style)
 - User profile
 - Settings
+- Workspace view/modal: usage limits, detected issues, restart/quota state
 
 ---
 
-## AI Assistants
+## Chat (COS Assistant)
 
-Each assistant has:
+No real AI backend — this is a UX/plumbing demo, not a functional assistant:
 
-- Name
-- Description
-- System Prompt
-- Temperature
-- Model
-- Files
-
----
-
-## Chat
-
-- history
-- streaming responses (optional)
+- message sent → stored in DB → server waits → simulated reply stored and sent back
+- chat history
 - markdown
 - code highlighting
+- import/export a chat/workspace
 
 ---
 
@@ -485,7 +490,7 @@ Plans:
 - Pro
 - Business
 
-Stripe controls access.
+Stripe controls access to COS Assistant and usage limits.
 
 ---
 
