@@ -3,6 +3,7 @@ import { Newsreader, Geist, Geist_Mono } from 'next/font/google';
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/Navbar";
+import { SmoothScroll } from "@/components/layout/SmoothScroll";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' });
@@ -27,9 +28,13 @@ export default function RootLayout({
       lang="en"
       className={cn("bg-bg", "text-ink", "h-full", "antialiased", newsreader.variable, "font-sans", geist.variable, geistMono.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      {/* No flex/min-h here: ScrollSmoother fixes #smooth-wrapper and drives
+          the body's height itself, so a flex column on the body would have
+          nothing in flow to lay out. The Navbar stays a sibling of the wrapper
+          because it's `fixed` — inside, it would ride the smoothed transform. */}
+      <body>
         <Navbar />
-        {children}
+        <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
   );

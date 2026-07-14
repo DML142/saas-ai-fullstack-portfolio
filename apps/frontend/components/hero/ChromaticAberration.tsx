@@ -19,7 +19,7 @@ export function ChromaticAberration({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className="relative flex w-full flex-1 flex-col"
+      className="relative w-full"
       style={reducedMotion ? undefined : { filter: `url(#${FILTER_ID})` }}
     >
       <svg className="absolute h-0 w-0 overflow-hidden" aria-hidden focusable="false">

@@ -9,6 +9,7 @@
   --color-bg: oklch(0.08 0 0);
   --color-ink: oklch(1 0 0);
   --color-cosmic: oklch(0.55 0.22 300);
+  --color-cosmic-light: oklch(0.72 0.17 300);
 }
 
 @theme inline {

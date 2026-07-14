@@ -7,6 +7,7 @@ import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useScrolled } from '@/hooks/useScrolled';
+import { useSmoothAnchor } from '@/hooks/useSmoothAnchor';
 
 const NAV_LINKS = [
   { label: 'Home', href: '#home' },
@@ -21,6 +22,7 @@ export function Navbar() {
   const { isLoggedIn, user } = useAuth();
   const scrolled = useScrolled(SCROLL_THRESHOLD_PX);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const handleAnchorClick = useSmoothAnchor();
 
   return (
     <header
@@ -39,6 +41,7 @@ export function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
+                onClick={handleAnchorClick}
                 className="text-sm text-foreground/70 transition-colors hover:text-foreground"
               >
                 {link.label}
@@ -82,7 +85,10 @@ export function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              onClick={() => setMobileOpen(false)}
+              onClick={(e) => {
+                handleAnchorClick(e);
+                setMobileOpen(false);
+              }}
               className="py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
             >
               {link.label}
