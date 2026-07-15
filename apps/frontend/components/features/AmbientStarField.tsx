@@ -8,7 +8,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-const STAR_COUNT = 48;
+const STAR_COUNT = 160;
 
 /**
  * Deterministic pseudo-random in [0, 1) from a seed — the classic
@@ -41,7 +41,11 @@ const STARS = Array.from({ length: STAR_COUNT }, (_, i) => ({
   left: round(hash(i * 1.7) * 100),
   top: round(hash(i * 2.9) * 100),
   size: round(1 + hash(i * 4.1) * 1.6),
-  opacity: round(0.12 + hash(i * 6.3) * 0.32),
+  // Floor raised from 0.12 and range widened from 0.32 — at the old values the
+  // field read as almost empty against the near-black background instead of a
+  // proper sky. Still capped at 0.55 (i.e., stays dimmer than the foreground's
+  // cosmic-light content) so the figure/ground split holds.
+  opacity: round(0.18 + hash(i * 6.3) * 0.37),
 }));
 
 export function AmbientStarField() {

@@ -4,6 +4,7 @@ import { InstallCommand } from "@/components/hero/InstallCommand";
 import { ChromaticAberration } from "@/components/hero/ChromaticAberration";
 import { Button } from "@/components/ui/button";
 import { FeaturesSection } from "@/components/features/FeaturesSection";
+import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 
 export default function Home() {
   return (
@@ -35,6 +36,7 @@ export default function Home() {
       </ChromaticAberration>
 
       <FeaturesSection />
+      <ReviewsSection />
     </>
   );
 }
