@@ -35,8 +35,12 @@ function FeatureLink({ href, children }: { href: string; children: ReactNode }) 
 
 type Feature = {
   id: string;
-  /** 0 = the main pillar. 1 = branched out to the right. */
-  lane: 0 | 1;
+  /** Horizontal offset for this row, shifting the star and its text together.
+   * Varied per-row with different magnitudes (not a strict left/right
+   * alternation) so the chain reads as organically zigzagging rather than
+   * mechanically bouncing between two fixed lanes. Omitted = the base
+   * pillar position. */
+  indentClass?: string;
   title: string;
   body: ReactNode;
 };
@@ -44,7 +48,6 @@ type Feature = {
 const FEATURES: Feature[] = [
   {
     id: 'fast-init',
-    lane: 0,
     title: 'Fast init',
     body: (
       <>
@@ -55,7 +58,7 @@ const FEATURES: Feature[] = [
   },
   {
     id: 'cli',
-    lane: 1,
+    indentClass: 'pl-8 md:pl-[76px]',
     title: 'CLI tool',
     body: (
       <>
@@ -66,7 +69,6 @@ const FEATURES: Feature[] = [
   },
   {
     id: 'workspace',
-    lane: 0,
     title: 'In-browser workspace / COS Cloud',
     body: (
       <>
@@ -78,7 +80,12 @@ const FEATURES: Feature[] = [
   },
   {
     id: 'import-export',
-    lane: 0,
+    // Pulled back in from an earlier, larger shift: at the bigger offset the
+    // incoming line from `workspace` (which sits at the base position, no
+    // offset of its own) ran close enough to this row's title to visually
+    // overlap it. A smaller rightward shift keeps some variation from `cli`'s
+    // offset while giving the line more clearance before it reaches the star.
+    indentClass: 'pl-8 md:pl-[64px]',
     title: 'Import / export',
     body: (
       <>
@@ -93,9 +100,10 @@ const FEATURES: Feature[] = [
  * A single chain, one star to the next: 1→2→3→4. No star reaches more than one
  * other, so the path never forks and there is only ever one line to follow.
  *
- * Star 2 still steps out to its own lane, so the chain zigzags rather than
- * running dead straight — that keeps the skill-tree/git-graph read the design
- * asked for without a branch.
+ * Stars 2 and 4 each step out to their own horizontal offset (star 3 sits back
+ * on the base pillar), so the chain zigzags rather than running dead straight
+ * — that keeps the skill-tree/git-graph read the design asked for without a
+ * branch.
  */
 const EDGES: [string, string][] = [
   ['fast-init', 'cli'],
@@ -274,7 +282,7 @@ export function FeatureStars() {
           key={f.id}
           // Perspective per row, so each feature warps around its own centre
           // rather than sharing one vanishing point down the whole column.
-          className={cn('relative [perspective:1000px]', f.lane === 1 && 'pl-8 md:pl-[76px]')}
+          className={cn('relative [perspective:1000px]', f.indentClass)}
         >
           <div className="flex items-start gap-4">
             <span
