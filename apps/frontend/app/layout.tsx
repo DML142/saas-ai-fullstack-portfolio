@@ -3,6 +3,7 @@ import { Newsreader, Geist, Geist_Mono } from 'next/font/google';
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -34,7 +35,14 @@ export default function RootLayout({
           because it's `fixed` — inside, it would ride the smoothed transform. */}
       <body>
         <Navbar />
-        <SmoothScroll>{children}</SmoothScroll>
+        {/* Footer lives inside SmoothScroll, not beside it like Navbar — it's
+            normal in-flow content meant to scroll with the page (every route,
+            not just the landing page), not a fixed element riding above the
+            smoothed transform. */}
+        <SmoothScroll>
+          {children}
+          <Footer />
+        </SmoothScroll>
       </body>
     </html>
   );
