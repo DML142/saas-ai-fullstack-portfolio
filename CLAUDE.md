@@ -171,6 +171,8 @@ For **frontend** work specifically, the roles invert by explicit request:
 
 Backend rules (1–7) are unchanged and unaffected by this exception.
 
+**Backend-integration code stays under Rules 1–5, even when the files live in the frontend.** Anything whose job is talking to the backend correctly — API clients, auth/session stores, token-refresh logic, request/response contracts, anything that has to match a DTO or an endpoint's actual behavior — follows the explain-first workflow (Rule 2), not the effect-heavy exception above. The distinction is what the code is *for*: rendering/animation/interaction is frontend-exception territory; encoding how the client and server agree to talk to each other is not, regardless of which folder it's in.
+
 ---
 
 # Project Goal

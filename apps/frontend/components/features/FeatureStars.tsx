@@ -282,7 +282,7 @@ export function FeatureStars() {
           key={f.id}
           // Perspective per row, so each feature warps around its own centre
           // rather than sharing one vanishing point down the whole column.
-          className={cn('relative [perspective:1000px]', f.indentClass)}
+          className={cn('relative perspective-[1000px]', f.indentClass)}
         >
           <div className="flex items-start gap-4">
             <span
@@ -311,7 +311,7 @@ export function FeatureStars() {
                 on the left edge keeps it anchored to the star while the far
                 edge recedes. Dropped below md, where a narrow column has no
                 width to spare on foreshortening. */}
-            <div className="min-w-0 flex-1 md:[transform:rotateY(-7deg)] md:[transform-origin:left_center]">
+            <div className="min-w-0 flex-1 md:transform-[rotateY(-7deg)] md:origin-[left_center]">
               <h3 className="font-display text-2xl leading-9 text-ink md:text-3xl md:leading-10">
                 {f.title}
               </h3>
