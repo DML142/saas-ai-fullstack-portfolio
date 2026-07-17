@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useSmoothAnchor } from '@/hooks/useSmoothAnchor';
+import { logout } from '@/lib/stores/auth';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 const NAV_LINKS = [
   { label: 'Home', href: '#home' },
@@ -17,6 +19,14 @@ const NAV_LINKS = [
 ];
 
 const SCROLL_THRESHOLD_PX = 40;
+
+async function handleLogout() {
+  try {
+    await logout();
+  } finally {
+    useAuthStore.getState().clearSession();
+  }
+}
 
 export function Navbar() {
   const { isLoggedIn, user } = useAuth();
@@ -115,11 +125,18 @@ function AuthControls({
   return (
     <>
       {isLoggedIn ? (
-        <Link href="/dashboard" onClick={onNavigate}>
-          <Button size="sm" className="border-2 border-primary/80 bg-primary/60">
-            Open Chat
-          </Button>
-        </Link>
+        <>
+          <Link href="/dashboard" onClick={onNavigate}>
+            <Button size="sm" className="border-2 border-primary/80 bg-primary/60">
+              Open Chat
+            </Button>
+          </Link>
+          <Link href="/" onClick={handleLogout}>
+            <Button variant="secondary" size="sm" className="border-2 border-muted-foreground/80">
+              Logout
+            </Button>
+          </Link>
+        </>
       ) : (
         <>
           <Link href="/register" onClick={onNavigate}>

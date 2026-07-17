@@ -3,8 +3,8 @@ import { Newsreader, Geist, Geist_Mono } from 'next/font/google';
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
+import { SessionBootstrap } from "@/components/auth/SessionBootstrap";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' });
@@ -34,15 +34,16 @@ export default function RootLayout({
           nothing in flow to lay out. The Navbar stays a sibling of the wrapper
           because it's `fixed` — inside, it would ride the smoothed transform. */}
       <body>
+        <SessionBootstrap />
         <Navbar />
-        {/* Footer lives inside SmoothScroll, not beside it like Navbar — it's
-            normal in-flow content meant to scroll with the page (every route,
-            not just the landing page), not a fixed element riding above the
-            smoothed transform. */}
-        <SmoothScroll>
-          {children}
-          <Footer />
-        </SmoothScroll>
+        {/* Footer is NOT rendered here — it's opted into per-route (currently
+            just the landing page's own composition) rather than mounted
+            globally. It was here originally, but a footer below a
+            `min-h-screen`-centered single-purpose screen (auth, and any
+            future ones like it) pushes the page's total height past one
+            viewport, throwing off that screen's own vertical centering
+            relative to what's actually visible without scrolling. */}
+        <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
   );

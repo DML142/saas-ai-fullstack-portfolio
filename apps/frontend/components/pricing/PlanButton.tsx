@@ -21,17 +21,27 @@ const LEDGE = 'color-mix(in oklab, var(--color-cosmic) 55%, black)';
 export function PlanButton({
   children,
   className,
+  type = 'button',
+  disabled,
 }: {
   children: React.ReactNode;
   className?: string;
+  /** Defaults to 'button' to preserve pricing's existing non-form usage — the
+   * auth pages that reuse this component pass 'submit' explicitly, since a
+   * plain click on a `type="button"` element inside a `<form>` never
+   * triggers submission. */
+  type?: 'button' | 'submit';
+  disabled?: boolean;
 }) {
   return (
     <button
-      type="button"
+      type={type}
+      disabled={disabled}
       style={{ ['--ledge' as string]: LEDGE }}
       className={cn(
         'group relative isolate w-full overflow-hidden rounded-xl px-6 py-3 font-medium text-ink',
         'bg-gradient-to-b from-cosmic-light to-cosmic',
+        'disabled:pointer-events-none disabled:opacity-50',
         // Resting: popped forward — a solid ledge directly beneath, plus a cast
         // shadow further down for depth. `perspective()` is chained as the
         // first function in `transform` itself (not the separate Tailwind

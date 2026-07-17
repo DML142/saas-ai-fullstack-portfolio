@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FeaturesSection } from "@/components/features/FeaturesSection";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { PricingSection } from "@/components/pricing/PricingSection";
+import { Footer } from "@/components/layout/Footer";
 
 export default function Home() {
   return (
@@ -39,6 +40,7 @@ export default function Home() {
       <FeaturesSection />
       <ReviewsSection />
       <PricingSection />
+      <Footer />
     </>
   );
 }
