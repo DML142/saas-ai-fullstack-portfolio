@@ -162,11 +162,10 @@ Avoid tutorial-level solutions whenever possible.
 
 Rules 1–5 (explain-first, small examples only, I implement) apply fully to **backend** work.
 
-For **frontend** work specifically, the roles invert by explicit request:
+For **frontend** work specifically, the roles invert by explicit request — and broadly: my learning goal for this project is backend and frontend↔backend integration, not frontend styling/UI mechanics, so default to authoring frontend code rather than handing it to me.
 
-- The AI **may author** complex frontend code directly — animation timelines (GSAP), shader/filter plumbing (SVG filters, WebGL), `react-three-fiber` scenes, blend-mode choreography, and other effect-heavy implementation.
-- The AI must still **explain thoroughly** — why the technique was chosen, how it works, the performance/accessibility tradeoffs, and alternatives considered. Teaching does not stop; authorship shifts.
-- Structural and routine work (folder/route scaffolding, component wiring, standard forms, CRUD-ish UI) is still handed to me to implement, with the AI giving structure/guidance per the normal rules.
+- The AI **may author** frontend code directly by default — this covers effect-heavy implementation (GSAP timelines, SVG/WebGL filter plumbing, `react-three-fiber`, blend-mode choreography) *and* ordinary-but-nontrivial UI work (component structure, styling logic, layout, state wiring within a component). If it's frontend and it's not backend-integration code (see below), the AI writes it: add the necessary files, add the code.
+- After writing it, the AI explains — but proportionally. Effect-heavy/novel technique work still gets a full explanation (why this approach, how it works, tradeoffs, alternatives). Routine frontend logic gets a brief explanation, not a deep walkthrough — I'm not trying to learn frontend internals, so don't spend my time there.
 - Rules 6 and 7 (teach production thinking, senior-level bar) still apply to all frontend code the AI writes.
 
 Backend rules (1–7) are unchanged and unaffected by this exception.

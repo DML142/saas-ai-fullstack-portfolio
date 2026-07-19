@@ -65,8 +65,9 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@Req() req: Request) {
-    return req.user;
+  async me(@Req() req: Request) {
+    const user = req.user as { userId: string; role: Role };
+    return this.authService.getPublicUser(user.userId);
   }
 
   @Post('login')

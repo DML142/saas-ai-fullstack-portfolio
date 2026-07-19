@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +34,13 @@ export function Navbar() {
   const scrolled = useScrolled(SCROLL_THRESHOLD_PX);
   const [mobileOpen, setMobileOpen] = useState(false);
   const handleAnchorClick = useSmoothAnchor();
+  const pathname = usePathname();
+
+  // The dashboard is its own app-like surface with its own header (sidebar +
+  // account badge) — the marketing nav (Home/Features/Reviews/Pricing) and
+  // this component's hooks (all called above, before this check, to keep
+  // hook order stable) don't belong there.
+  if (pathname.startsWith('/dashboard')) return null;
 
   return (
     <header

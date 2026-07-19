@@ -4,6 +4,7 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 
 interface AuthUser {
   name: string;
+  role: 'USER' | 'PREMIUM' | 'ADMIN';
 }
 
 interface AuthState {
@@ -17,6 +18,6 @@ export function useAuth(): AuthState {
 
   return {
     isLoggedIn: status === 'authenticated',
-    user: user ? { name: user.email } : null,
+    user: user ? { name: user.email, role: user.role } : null,
   };
 }
