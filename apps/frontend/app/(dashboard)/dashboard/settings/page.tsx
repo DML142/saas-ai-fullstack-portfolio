@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { UsageSummary } from '@/components/dashboard/UsageSummary';
 import { useAuth } from '@/hooks/useAuth';
 import { logout } from '@/lib/stores/auth';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -36,6 +37,13 @@ export default function SettingsPage() {
           </h2>
           <p className="text-ink">{user?.name}</p>
           <p className="text-sm text-foreground/60">{user?.role}</p>
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs tracking-widest text-foreground/50 uppercase">
+            Plan &amp; usage
+          </h2>
+          <UsageSummary />
         </section>
 
         <section className="flex flex-col items-start gap-2">

@@ -34,17 +34,17 @@
 
 ## 7. Workspace usage/quota view [AI-authored]
 
-- [ ] 7.1 Build a modal or view showing usage limits/quota as static placeholder data
-- [ ] 7.2 Reference the Pricing section's existing tier vocabulary (Lite/Pro/Ultra) for consistency rather than inventing new tier names
-- [ ] 7.3 Make clear in the copy/UI that this data is illustrative, not derived from real billing or usage tracking
+- [x] 7.1 Build a modal or view showing usage limits/quota as static placeholder data — built as a view (`UsageSummary`) inside Settings, not a modal, to avoid overlay/focus-trap complexity for something this simple
+- [x] 7.2 Reference the Pricing section's existing tier vocabulary (Lite/Pro/Ultra) for consistency rather than inventing new tier names — defaults to "Lite," matching `PricingSection.tsx`'s tier name (values themselves are local placeholders, not imported, to avoid coupling the dashboard to marketing-page internals)
+- [x] 7.3 Make clear in the copy/UI that this data is illustrative, not derived from real billing or usage tracking — "Preview" badge + explicit disclaimer line, verified visible in the browser
 
 ## 8. Verification
 
-- [ ] 8.1 Visit `/dashboard` while logged out, confirm redirect to `/login` (no new bug introduced in the shared guard)
-- [ ] 8.2 Visit `/dashboard` while logged in, confirm the shell renders: sidebar, switcher, profile, settings all reachable
-- [ ] 8.3 Switch between workspace entries, confirm the active selection updates and the placeholder panel reflects it
-- [ ] 8.4 Confirm the chat panel does not display any fake conversation history
-- [ ] 8.5 Confirm profile shows the real logged-in user's email and role
-- [ ] 8.6 Log out from the settings section, confirm it behaves identically to logging out from the Navbar
-- [ ] 8.7 Confirm no chromatic aberration or 3D/particle effects appear anywhere in the dashboard
-- [ ] 8.8 Confirm the workspace usage/quota view's placeholder nature is clear from the UI copy, not just from code comments
+- [x] 8.1 Visit `/dashboard` while logged out, confirm redirect to `/login` (no new bug introduced in the shared guard) — also checked `/dashboard/settings` directly, confirming the guard covers every route under the shared layout, not just `/dashboard` itself
+- [x] 8.2 Visit `/dashboard` while logged in, confirm the shell renders: sidebar, switcher, profile, settings all reachable
+- [x] 8.3 Switch between workspace entries, confirm the active selection updates and the placeholder panel reflects it
+- [x] 8.4 Confirm the chat panel does not display any fake conversation history
+- [x] 8.5 Confirm profile shows the real logged-in user's email and role
+- [x] 8.6 Log out from the settings section, confirm it behaves identically to logging out from the Navbar — same underlying mechanism confirmed (real `POST /auth/logout`, `clearSession()`), lands on `/login` instead of `/` since the redirect comes from `<RequireAuth>` reacting to the cleared session rather than an explicit navigation (see note on 6.2)
+- [x] 8.7 Confirm no chromatic aberration or 3D/particle effects appear anywhere in the dashboard — checked the DOM directly on both `/dashboard` and `/dashboard/settings`: zero chromatic-aberration filter defs, zero `<canvas>` elements, zero ambient-star-field nodes
+- [x] 8.8 Confirm the workspace usage/quota view's placeholder nature is clear from the UI copy, not just from code comments
