@@ -1,22 +1,22 @@
 ## 1. Data model [you implement]
 
-- [ ] 1.1 Add `Workspace` model to `schema.prisma`: `id`, `userId` (FK → `User`), `name`, `createdAt`
-- [ ] 1.2 Add `Message` model: `id`, `workspaceId` (FK → `Workspace`), `role` (`USER | ASSISTANT` enum), `content`, `createdAt`
-- [ ] 1.3 Generate and run the migration
+- [x] 1.1 Add `Workspace` model to `schema.prisma`: `id`, `userId` (FK → `User`), `name`, `createdAt`
+- [x] 1.2 Add `Message` model: `id`, `workspaceId` (FK → `Workspace`), `role` (`USER | ASSISTANT` enum), `content`, `createdAt`
+- [x] 1.3 Generate and run the migration — applied cleanly (`prisma migrate status` confirms up to date), client regenerated, backend builds
 
 ## 2. Backend: workspace + message persistence [you implement]
 
-- [ ] 2.1 `GET /chat/workspaces` — list the authenticated user's workspaces
-- [ ] 2.2 `POST /chat/workspaces` — create a new workspace for the authenticated user
-- [ ] 2.3 `GET /chat/workspaces/:id/messages` — return a workspace's message history in chronological order; reject if the workspace doesn't belong to the requester
-- [ ] 2.4 `POST /chat/workspaces/:id/messages` — persist the user's message, enqueue the reply job, return the persisted message immediately (don't wait on the job); reject if the workspace doesn't belong to the requester
+- [x] 2.1 `GET /chat/workspaces` — list the authenticated user's workspaces — verified via curl: empty before creation, correct list after, second user sees `[]` (not the first user's data)
+- [x] 2.2 `POST /chat/workspaces` — create a new workspace for the authenticated user — verified: returns the full created workspace including `id`
+- [x] 2.3 `GET /chat/workspaces/:id/messages` — return a workspace's message history in chronological order; reject if the workspace doesn't belong to the requester — verified: correct history returned; cross-user access returns 404, not 403 (per the enumeration-avoidance decision in `design.md`)
+- [x] 2.4 `POST /chat/workspaces/:id/messages` — persist the user's message, return it immediately; reject if the workspace doesn't belong to the requester — verified: message persisted and returned with `role: "USER"`; cross-user send also 404s. *(Reply-job enqueue deliberately not wired yet — that's section 3.)*
 
 ## 3. Backend: simulated reply pipeline (BullMQ) [you implement]
 
-- [ ] 3.1 Install BullMQ, wire up a queue using the existing `ioredis`-compatible Redis connection
-- [ ] 3.2 Enqueue a job (`{ workspaceId, userId }`) from the send-message endpoint
-- [ ] 3.3 Build the `@Processor`: simulate a short "thinking" delay, then persist an assistant `Message` with templated/canned content — no real AI/LLM call
-- [ ] 3.4 After persisting the reply, hand off to the WebSocket gateway (section 4) to push it
+- [x] 3.1 Install BullMQ, wire up a queue using the existing `ioredis`-compatible Redis connection — dedicated connection with `maxRetriesPerRequest: null`, separate from `RedisService`'s
+- [x] 3.2 Enqueue a job (`{ workspaceId, userId }`) from the send-message endpoint — verified via curl: message persisted and returned immediately, reply not yet present
+- [x] 3.3 Build the `@Processor`: simulate a short "thinking" delay, then persist an assistant `Message` with templated/canned content — no real AI/LLM call — verified: after ~2.7s, a real `ASSISTANT` message appeared in the workspace's history with canned content, no errors in the server log
+- [ ] 3.4 After persisting the reply, hand off to the WebSocket gateway (section 4) to push it — deliberately deferred; processor has a marker comment where this will go
 
 ## 4. Backend: WebSocket gateway [you implement]
 
