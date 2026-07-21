@@ -16,14 +16,14 @@
 - [x] 3.1 Install BullMQ, wire up a queue using the existing `ioredis`-compatible Redis connection — dedicated connection with `maxRetriesPerRequest: null`, separate from `RedisService`'s
 - [x] 3.2 Enqueue a job (`{ workspaceId, userId }`) from the send-message endpoint — verified via curl: message persisted and returned immediately, reply not yet present
 - [x] 3.3 Build the `@Processor`: simulate a short "thinking" delay, then persist an assistant `Message` with templated/canned content — no real AI/LLM call — verified: after ~2.7s, a real `ASSISTANT` message appeared in the workspace's history with canned content, no errors in the server log
-- [ ] 3.4 After persisting the reply, hand off to the WebSocket gateway (section 4) to push it — deliberately deferred; processor has a marker comment where this will go
+- [x] 3.4 After persisting the reply, hand off to the WebSocket gateway (section 4) to push it — closed out alongside section 4; processor now injects `ChatGateway` and calls `pushMessage` after persisting
 
 ## 4. Backend: WebSocket gateway [you implement]
 
-- [ ] 4.1 Install a WebSocket library (e.g. `@nestjs/websockets` + `socket.io`) and set up the gateway
-- [ ] 4.2 Authenticate the socket handshake using the existing access token (same secret/verification `JwtStrategy` uses) — reject the connection if invalid or missing
-- [ ] 4.3 Join each authenticated socket to a `user:{userId}` room
-- [ ] 4.4 Emit the new assistant message to `user:{userId}` once the worker (3.4) persists it
+- [x] 4.1 Install a WebSocket library (e.g. `@nestjs/websockets` + `socket.io`) and set up the gateway
+- [x] 4.2 Authenticate the socket handshake using the existing access token (same secret/verification `JwtStrategy` uses) — reject the connection if invalid or missing — verified live with a real `socket.io-client`: no token → immediate server-initiated disconnect (`reason: "io server disconnect"`); valid token → connection persists
+- [x] 4.3 Join each authenticated socket to a `user:{userId}` room — verified indirectly via the isolation test below
+- [x] 4.4 Emit the new assistant message to `user:{userId}` once the worker (3.4) persists it — verified live: a connected, authenticated socket received the real `message:new` event with the actual persisted reply; a second user's socket, connected simultaneously, received nothing when the first user's reply was pushed
 
 ## 5. Frontend: chat API client + workspace store [you implement]
 

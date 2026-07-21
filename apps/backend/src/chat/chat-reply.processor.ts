@@ -2,10 +2,14 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { PrismaService } from 'src/PrismaService';
 import { CANNED_REPLIES } from './canned-replies';
+import { ChatGateway } from './chat.gateway';
 
 @Processor('chat-reply')
 export class ChatReplyProcessor extends WorkerHost {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private gateway: ChatGateway,
+  ) {
     super();
   }
 
@@ -23,7 +27,7 @@ export class ChatReplyProcessor extends WorkerHost {
       },
     });
 
-    //skip for now
+    this.gateway.pushMessage(job.data.userId, message);
 
     return message;
   }

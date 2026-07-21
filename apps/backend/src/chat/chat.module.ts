@@ -6,6 +6,8 @@ import { PassportModule } from '@nestjs/passport';
 import { BullModule } from '@nestjs/bullmq';
 import Redis from 'ioredis';
 import { ChatReplyProcessor } from './chat-reply.processor';
+import { JwtModule } from '@nestjs/jwt';
+import { ChatGateway } from './chat.gateway';
 
 const connection = new Redis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
@@ -17,8 +19,9 @@ const connection = new Redis(process.env.REDIS_URL!, {
     PassportModule,
     BullModule.forRoot({ connection }),
     BullModule.registerQueue({ name: 'chat-reply' }),
+    JwtModule.register({}),
   ],
-  providers: [ChatService, ChatReplyProcessor],
+  providers: [ChatService, ChatReplyProcessor, ChatGateway],
   controllers: [ChatController],
 })
 export class ChatModule {}
