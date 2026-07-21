@@ -1,5 +1,5 @@
-import { RequireAuth } from "@/components/auth/RequireAuth";
-import { Sidebar } from "@/components/dashboard/Sidebar";
+import { RequireAuth } from '@/components/auth/RequireAuth';
+import { Sidebar } from '@/components/dashboard/Sidebar';
 
 export default function DashboardLayout({
   children,

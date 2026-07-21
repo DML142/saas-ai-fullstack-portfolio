@@ -50,9 +50,15 @@ export function WordCycler() {
       // per request. Every branch sets *both* axes explicitly so switching
       // between them (e.g. resizing across the breakpoint mid-cycle) always
       // resets the other axis to 0 instead of leaving a stale offset.
-      const restingAxis = isMobile ? { xPercent: -100, yPercent: 0 } : { xPercent: 0, yPercent: 100 };
-      const enterFrom = isMobile ? { xPercent: -100, yPercent: 0 } : { xPercent: 0, yPercent: 100 };
-      const exitTo = isMobile ? { xPercent: 100, yPercent: 0 } : { xPercent: 0, yPercent: -100 };
+      const restingAxis = isMobile
+        ? { xPercent: -100, yPercent: 0 }
+        : { xPercent: 0, yPercent: 100 };
+      const enterFrom = isMobile
+        ? { xPercent: -100, yPercent: 0 }
+        : { xPercent: 0, yPercent: 100 };
+      const exitTo = isMobile
+        ? { xPercent: 100, yPercent: 0 }
+        : { xPercent: 0, yPercent: -100 };
       const settled = { xPercent: 0, yPercent: 0 };
 
       WORDS.forEach((_, i) => {
@@ -67,7 +73,12 @@ export function WordCycler() {
             gsap.fromTo(
               el,
               { ...enterFrom, autoAlpha: 0 },
-              { ...settled, autoAlpha: 1, duration: TRANSITION_S, ease: 'power3.inOut' },
+              {
+                ...settled,
+                autoAlpha: 1,
+                duration: TRANSITION_S,
+                ease: 'power3.inOut',
+              },
             );
           }
         } else if (i === prevIndex && prevIndex !== index) {
@@ -75,7 +86,12 @@ export function WordCycler() {
           if (reducedMotion) {
             gsap.set(el, { ...exitTo, autoAlpha: 0 });
           } else {
-            gsap.to(el, { ...exitTo, autoAlpha: 0, duration: TRANSITION_S, ease: 'power3.inOut' });
+            gsap.to(el, {
+              ...exitTo,
+              autoAlpha: 0,
+              duration: TRANSITION_S,
+              ease: 'power3.inOut',
+            });
           }
         } else {
           // resting, waiting its turn, parked at the point it will enter from
@@ -94,7 +110,11 @@ export function WordCycler() {
       if (reducedMotion || prevIndex === index) {
         gsap.set(container, { width: targetWidth });
       } else {
-        gsap.to(container, { width: targetWidth, duration: TRANSITION_S, ease: 'power3.inOut' });
+        gsap.to(container, {
+          width: targetWidth,
+          duration: TRANSITION_S,
+          ease: 'power3.inOut',
+        });
       }
 
       prevIndexRef.current = index;

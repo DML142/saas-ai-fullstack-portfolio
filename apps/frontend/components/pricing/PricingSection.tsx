@@ -75,9 +75,12 @@ export function PricingSection() {
 
         <div className="relative z-10 flex flex-col items-center gap-14 px-6 py-24 md:py-32">
           <div className="flex flex-col items-center gap-4">
-            <h2 className="font-display text-4xl text-ink md:text-6xl">Pricing</h2>
+            <h2 className="font-display text-4xl text-ink md:text-6xl">
+              Pricing
+            </h2>
             <p className="max-w-md text-center text-sm text-foreground/60 md:text-base">
-              The CLI is the product. The plan decides how much runs on our side.
+              The CLI is the product. The plan decides how much runs on our
+              side.
             </p>
           </div>
 

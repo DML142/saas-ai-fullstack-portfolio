@@ -31,7 +31,11 @@ export function spikePath(r: number) {
  */
 export function StarGradientDefs() {
   return (
-    <svg className="absolute h-0 w-0 overflow-hidden" aria-hidden focusable="false">
+    <svg
+      className="absolute h-0 w-0 overflow-hidden"
+      aria-hidden
+      focusable="false"
+    >
       <defs>
         {/* Bloom without a filter. An feGaussianBlur would cost a full
             re-rasterisation per star; a radial gradient is plain paint, and it
@@ -39,15 +43,39 @@ export function StarGradientDefs() {
             blur can't do in one pass anyway. */}
         <radialGradient id={BLOOM_ID}>
           <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
-          <stop offset="14%" style={{ stopColor: '#ffffff', stopOpacity: 0.82 }} />
-          <stop offset="32%" style={{ stopColor: 'var(--color-cosmic-light)', stopOpacity: 0.5 }} />
-          <stop offset="62%" style={{ stopColor: 'var(--color-cosmic)', stopOpacity: 0.16 }} />
-          <stop offset="100%" style={{ stopColor: 'var(--color-cosmic)', stopOpacity: 0 }} />
+          <stop
+            offset="14%"
+            style={{ stopColor: '#ffffff', stopOpacity: 0.82 }}
+          />
+          <stop
+            offset="32%"
+            style={{ stopColor: 'var(--color-cosmic-light)', stopOpacity: 0.5 }}
+          />
+          <stop
+            offset="62%"
+            style={{ stopColor: 'var(--color-cosmic)', stopOpacity: 0.16 }}
+          />
+          <stop
+            offset="100%"
+            style={{ stopColor: 'var(--color-cosmic)', stopOpacity: 0 }}
+          />
         </radialGradient>
         <radialGradient id={SPIKE_ID}>
-          <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.9 }} />
-          <stop offset="45%" style={{ stopColor: 'var(--color-cosmic-light)', stopOpacity: 0.32 }} />
-          <stop offset="100%" style={{ stopColor: 'var(--color-cosmic-light)', stopOpacity: 0 }} />
+          <stop
+            offset="0%"
+            style={{ stopColor: '#ffffff', stopOpacity: 0.9 }}
+          />
+          <stop
+            offset="45%"
+            style={{
+              stopColor: 'var(--color-cosmic-light)',
+              stopOpacity: 0.32,
+            }}
+          />
+          <stop
+            offset="100%"
+            style={{ stopColor: 'var(--color-cosmic-light)', stopOpacity: 0 }}
+          />
         </radialGradient>
       </defs>
     </svg>

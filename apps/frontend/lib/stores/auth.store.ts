@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { AuthUser } from "./auth";
+import { create } from 'zustand';
+import { AuthUser } from './auth';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -15,8 +15,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   user: null,
   status: 'loading',
-  setSession: (accessToken, user) => 
+  setSession: (accessToken, user) =>
     set({ accessToken, user, status: 'authenticated' }),
-  clearSession: () => 
-    set({ accessToken: null, user: null, status: 'unauthenticated'}),
+  clearSession: () =>
+    set({ accessToken: null, user: null, status: 'unauthenticated' }),
 }));

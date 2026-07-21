@@ -13,7 +13,9 @@ export interface Session {
   user: AuthUser;
 }
 
-function toSession(raw: { accessToken: string} & Record<string, unknown>): Session {
+function toSession(
+  raw: { accessToken: string } & Record<string, unknown>,
+): Session {
   const { accessToken, ...user } = raw;
   return { accessToken, user: user as unknown as AuthUser };
 }
@@ -36,7 +38,10 @@ export async function login(email: string, password: string): Promise<Session> {
   return toSession(await parseOrThrow(res));
 }
 
-export async function register(email: string, password: string): Promise<Session> {
+export async function register(
+  email: string,
+  password: string,
+): Promise<Session> {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -59,7 +64,7 @@ export async function logout(): Promise<void> {
     method: 'POST',
     credentials: 'include',
   });
-} 
+}
 
 export async function me(accessToken: string): Promise<AuthUser> {
   const res = await fetch(`${API_URL}/auth/me`, {
@@ -76,7 +81,7 @@ export async function authFetch(
   onRefreshed: (session: { accessToken: string; user: AuthUser }) => void,
   onSessionLost: () => void,
 ): Promise<Response> {
-  const attemp = async (token: string | null) => 
+  const attemp = async (token: string | null) =>
     fetch(input, {
       ...init,
       credentials: 'include',

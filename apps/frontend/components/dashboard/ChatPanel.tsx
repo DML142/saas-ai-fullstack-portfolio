@@ -19,7 +19,11 @@ export function ChatPanel() {
           backend yet, so this has to read as "nothing here" rather than
           simulate a conversation that never happened. */}
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <MessageSquare className="text-foreground/30" size={32} strokeWidth={1.5} />
+        <MessageSquare
+          className="text-foreground/30"
+          size={32}
+          strokeWidth={1.5}
+        />
         <p className="text-sm text-foreground/50">
           No messages yet — chat isn&apos;t wired up in this preview.
         </p>
@@ -27,7 +31,11 @@ export function ChatPanel() {
 
       <div className="flex items-center gap-2 border-t border-border/60 px-6 py-4">
         <Input disabled placeholder="Chat is coming soon" className="flex-1" />
-        <Button disabled size="sm" className="border-2 border-primary/80 bg-primary/60">
+        <Button
+          disabled
+          size="sm"
+          className="border-2 border-primary/80 bg-primary/60"
+        >
           Send
         </Button>
       </div>

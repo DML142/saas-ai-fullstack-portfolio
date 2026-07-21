@@ -1,12 +1,12 @@
-import { WordCycler } from "@/components/hero/WordCycler";
-import { StarField } from "@/components/hero/StarField";
-import { InstallCommand } from "@/components/hero/InstallCommand";
-import { ChromaticAberration } from "@/components/hero/ChromaticAberration";
-import { Button } from "@/components/ui/button";
-import { FeaturesSection } from "@/components/features/FeaturesSection";
-import { ReviewsSection } from "@/components/reviews/ReviewsSection";
-import { PricingSection } from "@/components/pricing/PricingSection";
-import { Footer } from "@/components/layout/Footer";
+import { WordCycler } from '@/components/hero/WordCycler';
+import { StarField } from '@/components/hero/StarField';
+import { InstallCommand } from '@/components/hero/InstallCommand';
+import { ChromaticAberration } from '@/components/hero/ChromaticAberration';
+import { Button } from '@/components/ui/button';
+import { FeaturesSection } from '@/components/features/FeaturesSection';
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
+import { PricingSection } from '@/components/pricing/PricingSection';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Home() {
   return (

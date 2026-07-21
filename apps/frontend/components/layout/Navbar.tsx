@@ -114,7 +114,11 @@ export function Navbar() {
           ))}
         </nav>
         <div className="flex flex-col items-start gap-3 border-t border-border px-6 py-4">
-          <AuthControls isLoggedIn={isLoggedIn} userName={user?.name} onNavigate={() => setMobileOpen(false)} />
+          <AuthControls
+            isLoggedIn={isLoggedIn}
+            userName={user?.name}
+            onNavigate={() => setMobileOpen(false)}
+          />
         </div>
       </div>
     </header>
@@ -135,12 +139,19 @@ function AuthControls({
       {isLoggedIn ? (
         <>
           <Link href="/dashboard" onClick={onNavigate}>
-            <Button size="sm" className="border-2 border-primary/80 bg-primary/60">
+            <Button
+              size="sm"
+              className="border-2 border-primary/80 bg-primary/60"
+            >
               Open Chat
             </Button>
           </Link>
           <Link href="/" onClick={handleLogout}>
-            <Button variant="secondary" size="sm" className="border-2 border-muted-foreground/80">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="border-2 border-muted-foreground/80"
+            >
               Logout
             </Button>
           </Link>
@@ -148,12 +159,19 @@ function AuthControls({
       ) : (
         <>
           <Link href="/register" onClick={onNavigate}>
-            <Button variant="secondary" size="sm" className="border-2 border-muted-foreground/80">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="border-2 border-muted-foreground/80"
+            >
               Register
             </Button>
           </Link>
           <Link href="/login" onClick={onNavigate}>
-            <Button size="sm" className="border-2 border-primary/80 bg-primary/60">
+            <Button
+              size="sm"
+              className="border-2 border-primary/80 bg-primary/60"
+            >
               Login
             </Button>
           </Link>

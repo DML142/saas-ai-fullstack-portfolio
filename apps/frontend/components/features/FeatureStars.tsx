@@ -22,7 +22,13 @@ function Cmd({ children }: { children: string }) {
 
 /** Points at a route that doesn't exist yet — same pattern as the navbar's
  * links, which already reach for /dashboard ahead of it being built. */
-function FeatureLink({ href, children }: { href: string; children: ReactNode }) {
+function FeatureLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
   return (
     <Link
       href={href}
@@ -51,8 +57,9 @@ const FEATURES: Feature[] = [
     title: 'Fast init',
     body: (
       <>
-        One command. <Cmd>cos init</Cmd> reads the project, works out which agent tooling it
-        actually needs, and wires it in — asking only about what it can&apos;t infer on its own.
+        One command. <Cmd>cos init</Cmd> reads the project, works out which
+        agent tooling it actually needs, and wires it in — asking only about
+        what it can&apos;t infer on its own.
       </>
     ),
   },
@@ -62,8 +69,9 @@ const FEATURES: Feature[] = [
     title: 'CLI tool',
     body: (
       <>
-        <Cmd>npm i -g coscode</Cmd> and you&apos;re set. No config format to learn, no plugin
-        registry to browse. It runs where your code already lives.
+        <Cmd>npm i -g coscode</Cmd> and you&apos;re set. No config format to
+        learn, no plugin registry to browse. It runs where your code already
+        lives.
       </>
     ),
   },
@@ -72,9 +80,9 @@ const FEATURES: Feature[] = [
     title: 'In-browser workspace / COS Cloud',
     body: (
       <>
-        Every project you initialise shows up in COS Cloud. Watch usage limits, catch config that
-        has drifted, and pick up where the CLI left off from the{' '}
-        <FeatureLink href="/dashboard">COS Project Manager</FeatureLink>.
+        Every project you initialise shows up in COS Cloud. Watch usage limits,
+        catch config that has drifted, and pick up where the CLI left off from
+        the <FeatureLink href="/dashboard">COS Project Manager</FeatureLink>.
       </>
     ),
   },
@@ -89,8 +97,8 @@ const FEATURES: Feature[] = [
     title: 'Import / export',
     body: (
       <>
-        Take a workspace with you. Export a project&apos;s setup as a single file, import it on
-        another machine, and land exactly where you left off.
+        Take a workspace with you. Export a project&apos;s setup as a single
+        file, import it on another machine, and land exactly where you left off.
       </>
     ),
   },
@@ -156,7 +164,10 @@ export function FeatureStars() {
 
         const centre = (el: HTMLSpanElement) => {
           const r = el.getBoundingClientRect();
-          return { x: r.left - cRect.left + r.width / 2, y: r.top - cRect.top + r.height / 2 };
+          return {
+            x: r.left - cRect.left + r.width / 2,
+            y: r.top - cRect.top + r.height / 2,
+          };
         };
         const a = centre(aEl);
         const b = centre(bEl);
@@ -262,7 +273,10 @@ export function FeatureStars() {
     >
       {/* No viewBox: the overlay matches the container's box exactly, so its
           user units are CSS pixels and measured coordinates need no mapping. */}
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        aria-hidden
+      >
         {EDGES.map(([from, to], i) => (
           <line
             key={`${from}-${to}`}
@@ -302,7 +316,11 @@ export function FeatureStars() {
                 className="overflow-visible"
                 aria-hidden
               >
-                <StarMark coreR={STAR_CORE_R} bloomR={STAR_BLOOM_R} spikeR={STAR_SPIKE_R} />
+                <StarMark
+                  coreR={STAR_CORE_R}
+                  bloomR={STAR_BLOOM_R}
+                  spikeR={STAR_SPIKE_R}
+                />
               </svg>
             </span>
 

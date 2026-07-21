@@ -41,7 +41,11 @@ export function ChromaticAberration({
       className="relative w-full"
       style={reducedMotion ? undefined : { filter: `url(#${filterId})` }}
     >
-      <svg className="absolute h-0 w-0 overflow-hidden" aria-hidden focusable="false">
+      <svg
+        className="absolute h-0 w-0 overflow-hidden"
+        aria-hidden
+        focusable="false"
+      >
         <defs>
           <filter id={filterId} colorInterpolationFilters="sRGB">
             {/* isolate the red channel and shift it left */}

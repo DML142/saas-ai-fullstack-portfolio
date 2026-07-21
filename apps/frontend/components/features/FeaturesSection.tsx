@@ -39,7 +39,8 @@ export function FeaturesSection() {
               COS Code Features
             </h2>
             <p className="max-w-md text-center text-sm text-foreground/60 md:text-base">
-              Everything from the box — no config to write, no plugins to hunt down.
+              Everything from the box — no config to write, no plugins to hunt
+              down.
             </p>
           </div>
           <FeatureStars />

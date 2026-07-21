@@ -81,7 +81,9 @@ export function AmbientStarField() {
       // each with randomized duration/phase so the field never pulses in
       // unison. Random is safe here — this is inside the client-only effect,
       // so it never touches the server-rendered markup.
-      const stars = layer.querySelectorAll<HTMLDivElement>('[data-ambient-star]');
+      const stars = layer.querySelectorAll<HTMLDivElement>(
+        '[data-ambient-star]',
+      );
       stars.forEach((star) => {
         gsap.to(star, {
           x: gsap.utils.random(-8, 8),

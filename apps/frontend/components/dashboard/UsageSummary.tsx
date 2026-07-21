@@ -45,7 +45,8 @@ export function UsageSummary() {
       </div>
 
       <p className="text-xs text-foreground/40">
-        Illustrative preview data — not connected to real billing or usage tracking.
+        Illustrative preview data — not connected to real billing or usage
+        tracking.
       </p>
     </div>
   );

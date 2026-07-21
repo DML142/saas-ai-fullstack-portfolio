@@ -48,11 +48,51 @@ type Review = {
  * sky, not like a score.
  */
 const REVIEWS: Review[] = [
-  { id: 'jae', quote: 'It read the repo and wired in exactly what I would have picked by hand. Took about four seconds.', name: 'Jae T.', role: 'Backend engineer', x: 9, y: 30 },
-  { id: 'priya', quote: 'We stopped arguing about which MCP servers to standardise on. It detects what the project needs and configures them.', name: 'Priya N.', role: 'Staff engineer', x: 30, y: 74 },
-  { id: 'marc', quote: 'I start a lot of projects. The setup tax is what kills most of them. This removes the tax.', name: 'Marc D.', role: 'Indie developer', x: 52, y: 18 },
-  { id: 'rin', quote: 'Onboarding used to mean a day of tooling config before anyone wrote a line. Now it is one command in the README.', name: 'Rin O.', role: 'Platform lead', x: 73, y: 66 },
-  { id: 'sam', quote: 'The part I did not expect: it only asks about the things it genuinely cannot work out on its own.', name: 'Sam K.', role: 'Tech lead', x: 92, y: 26 },
+  {
+    id: 'jae',
+    quote:
+      'It read the repo and wired in exactly what I would have picked by hand. Took about four seconds.',
+    name: 'Jae T.',
+    role: 'Backend engineer',
+    x: 9,
+    y: 30,
+  },
+  {
+    id: 'priya',
+    quote:
+      'We stopped arguing about which MCP servers to standardise on. It detects what the project needs and configures them.',
+    name: 'Priya N.',
+    role: 'Staff engineer',
+    x: 30,
+    y: 74,
+  },
+  {
+    id: 'marc',
+    quote:
+      'I start a lot of projects. The setup tax is what kills most of them. This removes the tax.',
+    name: 'Marc D.',
+    role: 'Indie developer',
+    x: 52,
+    y: 18,
+  },
+  {
+    id: 'rin',
+    quote:
+      'Onboarding used to mean a day of tooling config before anyone wrote a line. Now it is one command in the README.',
+    name: 'Rin O.',
+    role: 'Platform lead',
+    x: 73,
+    y: 66,
+  },
+  {
+    id: 'sam',
+    quote:
+      'The part I did not expect: it only asks about the things it genuinely cannot work out on its own.',
+    name: 'Sam K.',
+    role: 'Tech lead',
+    x: 92,
+    y: 26,
+  },
 ];
 
 /** Initials in a circle — never a photograph. A fabricated face attached to a
@@ -82,7 +122,11 @@ function Star({ box = STAR_BOX }: { box?: number }) {
       className="overflow-visible"
       aria-hidden
     >
-      <StarMark coreR={STAR_CORE_R} bloomR={STAR_BLOOM_R} spikeR={STAR_SPIKE_R} />
+      <StarMark
+        coreR={STAR_CORE_R}
+        bloomR={STAR_BLOOM_R}
+        spikeR={STAR_SPIKE_R}
+      />
     </svg>
   );
 }
@@ -141,7 +185,11 @@ export function ReviewStars() {
 
       const quote = quoteRef.current;
       if (quote && prev !== index) {
-        gsap.fromTo(quote, { autoAlpha: 0 }, { autoAlpha: 1, duration: FADE_S, ease: 'sine.out' });
+        gsap.fromTo(
+          quote,
+          { autoAlpha: 0 },
+          { autoAlpha: 1, duration: FADE_S, ease: 'sine.out' },
+        );
       }
 
       prevIndexRef.current = index;

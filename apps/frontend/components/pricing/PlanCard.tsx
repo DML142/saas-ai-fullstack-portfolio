@@ -76,7 +76,12 @@ function UltraTitle({ name }: { name: string }) {
       gsap.fromTo(
         el,
         { backgroundPositionX: '0px' },
-        { backgroundPositionX: `${tileWidth}px`, duration: 3.5, ease: 'none', repeat: -1 },
+        {
+          backgroundPositionX: `${tileWidth}px`,
+          duration: 3.5,
+          ease: 'none',
+          repeat: -1,
+        },
       );
     },
     { dependencies: [reducedMotion, tileWidth] },
@@ -182,7 +187,11 @@ export function PlanCard({ plan }: { plan: Plan }) {
             ],
           )}
         >
-          {featured ? <UltraTitle name={name} /> : <h3 className="font-display text-2xl text-ink">{name}</h3>}
+          {featured ? (
+            <UltraTitle name={name} />
+          ) : (
+            <h3 className="font-display text-2xl text-ink">{name}</h3>
+          )}
           <p className="mt-1 text-sm text-foreground/55">{tagline}</p>
 
           <p className="mt-6 flex items-baseline gap-1">
@@ -193,7 +202,10 @@ export function PlanCard({ plan }: { plan: Plan }) {
           <ul className="mt-8 flex flex-col gap-3 text-sm">
             {features.map((feature) => (
               <li key={feature} className="flex items-start gap-2.5">
-                <Check className="mt-0.5 size-4 shrink-0 text-cosmic-light" aria-hidden />
+                <Check
+                  className="mt-0.5 size-4 shrink-0 text-cosmic-light"
+                  aria-hidden
+                />
                 <span className="text-ink/80">{feature}</span>
               </li>
             ))}

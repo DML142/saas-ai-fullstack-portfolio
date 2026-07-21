@@ -12,9 +12,10 @@ export function Footer() {
         </Link>
 
         <p className="max-w-2xl text-center text-xs leading-relaxed text-foreground/50 md:text-right">
-          Project for portfolio-only purposes, nothing is commercial here and payment is preview
-          only feature to show how backend works, in any case do not purchase this product,
-          because you will get nothing of it. Source code of site can be found on{' '}
+          Project for portfolio-only purposes, nothing is commercial here and
+          payment is preview only feature to show how backend works, in any case
+          do not purchase this product, because you will get nothing of it.
+          Source code of site can be found on{' '}
           <a
             href={REPO_URL}
             target="_blank"

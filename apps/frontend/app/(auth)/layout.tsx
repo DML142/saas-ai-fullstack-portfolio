@@ -1,4 +1,4 @@
-import { StarField } from "@/components/hero/StarField";
+import { StarField } from '@/components/hero/StarField';
 
 /**
  * Shared by /login and /register. The star field is the same one the hero
@@ -8,7 +8,11 @@ import { StarField } from "@/components/hero/StarField";
  * The card itself is deliberately plain: a translucent tint and a faint
  * border, no blur, no glow — nothing borrowed from Pricing's Ultra treatment.
  */
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg px-6 py-24">
       <StarField />

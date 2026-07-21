@@ -32,10 +32,11 @@ const FAQS: Faq[] = [
     question: 'Why not just install the tools myself?',
     answer: (
       <>
-        You can — it&apos;s an afternoon of reading changelogs, picking MCP servers, writing{' '}
-        <Cmd>.md</Cmd> context, and wiring up review tooling. Then the same afternoon again on the
-        next repo, and again when a convention shifts. <Cmd>cos init</Cmd> is that afternoon,
-        automated and kept current.
+        You can — it&apos;s an afternoon of reading changelogs, picking MCP
+        servers, writing <Cmd>.md</Cmd> context, and wiring up review tooling.
+        Then the same afternoon again on the next repo, and again when a
+        convention shifts. <Cmd>cos init</Cmd> is that afternoon, automated and
+        kept current.
       </>
     ),
   },
@@ -44,9 +45,10 @@ const FAQS: Faq[] = [
     question: 'Why this tooling and not something else?',
     answer: (
       <>
-        COS Code doesn&apos;t replace your agent — it configures whatever you already use. The tools
-        stay exactly the same. They just arrive already wired together instead of one{' '}
-        <Cmd>npm install</Cmd> and one config file at a time.
+        COS Code doesn&apos;t replace your agent — it configures whatever you
+        already use. The tools stay exactly the same. They just arrive already
+        wired together instead of one <Cmd>npm install</Cmd> and one config file
+        at a time.
       </>
     ),
   },
@@ -55,9 +57,10 @@ const FAQS: Faq[] = [
     question: 'Why does it cost what it costs?',
     answer: (
       <>
-        The CLI is free and stays free. Paid tiers cover what actually runs on our side: CodeRabbit
-        review passes, COS Cloud workspace storage, and hosted agents. Real per-seat cost, priced at
-        roughly what it costs us to serve.
+        The CLI is free and stays free. Paid tiers cover what actually runs on
+        our side: CodeRabbit review passes, COS Cloud workspace storage, and
+        hosted agents. Real per-seat cost, priced at roughly what it costs us to
+        serve.
       </>
     ),
   },
@@ -66,9 +69,10 @@ const FAQS: Faq[] = [
     question: 'Can I run it on an existing project?',
     answer: (
       <>
-        That&apos;s the main case. <Cmd>cos init</Cmd> reads what&apos;s already there — your stack,
-        existing configs, conventions living in <Cmd>.md</Cmd> files — and fills the gaps. It
-        won&apos;t overwrite config you&apos;ve already committed.
+        That&apos;s the main case. <Cmd>cos init</Cmd> reads what&apos;s already
+        there — your stack, existing configs, conventions living in{' '}
+        <Cmd>.md</Cmd> files — and fills the gaps. It won&apos;t overwrite
+        config you&apos;ve already committed.
       </>
     ),
   },
@@ -77,8 +81,9 @@ const FAQS: Faq[] = [
     question: 'How do I add a custom Skill or MCP server?',
     answer: (
       <>
-        Drop it into the project&apos;s COS config and it&apos;s picked up on the next init. Custom
-        entries are never clobbered by auto-detection — anything you declare yourself wins.
+        Drop it into the project&apos;s COS config and it&apos;s picked up on
+        the next init. Custom entries are never clobbered by auto-detection —
+        anything you declare yourself wins.
       </>
     ),
   },
@@ -108,7 +113,12 @@ export function FaqList() {
           {
             scaleX: 1,
             ease: 'none',
-            scrollTrigger: { trigger: line, start: 'top 92%', end: 'top 68%', scrub: true },
+            scrollTrigger: {
+              trigger: line,
+              start: 'top 92%',
+              end: 'top 68%',
+              scrub: true,
+            },
           },
         );
       });
@@ -128,7 +138,11 @@ export function FaqList() {
             y: 0,
             duration: 0.6,
             ease: 'power2.out',
-            scrollTrigger: { trigger: row, start: 'top bottom', toggleActions: 'play none none none' },
+            scrollTrigger: {
+              trigger: row,
+              start: 'top bottom',
+              toggleActions: 'play none none none',
+            },
           },
         );
       });
@@ -165,12 +179,20 @@ export function FaqList() {
                 className="overflow-visible"
                 aria-hidden
               >
-                <StarMark coreR={STAR_CORE_R} bloomR={STAR_BLOOM_R} spikeR={STAR_SPIKE_R} />
+                <StarMark
+                  coreR={STAR_CORE_R}
+                  bloomR={STAR_BLOOM_R}
+                  spikeR={STAR_SPIKE_R}
+                />
               </svg>
             </span>
             <div className="min-w-0">
-              <h3 className="font-display text-lg text-cosmic-light md:text-xl">{faq.question}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink/80 md:text-base">{faq.answer}</p>
+              <h3 className="font-display text-lg text-cosmic-light md:text-xl">
+                {faq.question}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink/80 md:text-base">
+                {faq.answer}
+              </p>
             </div>
           </div>
         </div>

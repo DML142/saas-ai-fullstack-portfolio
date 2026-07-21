@@ -54,13 +54,79 @@ type StarDef = {
  * reach into.
  */
 const BIG_DIPPER: StarDef[] = [
-  { id: 'megrez', star: 'Megrez · δ Ursae Majoris', label: 'cos init', ra: 12.2571, dec: 57.033, mag: 3.31, ly: 80.5, labelDir: 'up-left', hub: true },
-  { id: 'dubhe', star: 'Dubhe · α Ursae Majoris', label: 'CodeRabbit', ra: 11.0621, dec: 61.751, mag: 1.79, ly: 123, labelDir: 'up' },
-  { id: 'merak', star: 'Merak · β Ursae Majoris', label: 'Skills', ra: 11.0307, dec: 56.383, mag: 2.37, ly: 79.7, labelDir: 'right' },
-  { id: 'phecda', star: 'Phecda · γ Ursae Majoris', label: 'OpenSpec', ra: 11.8972, dec: 53.695, mag: 2.44, ly: 83.2, labelDir: 'down' },
-  { id: 'alioth', star: 'Alioth · ε Ursae Majoris', label: 'MCP', ra: 12.9005, dec: 55.96, mag: 1.77, ly: 82.6, labelDir: 'up', labelDirMobile: 'down' },
-  { id: 'mizar', star: 'Mizar · ζ Ursae Majoris', label: 'Agent', ra: 13.3987, dec: 54.925, mag: 2.27, ly: 82.9, labelDir: 'down' },
-  { id: 'alkaid', star: 'Alkaid · η Ursae Majoris', label: '.md context', ra: 13.7923, dec: 49.313, mag: 1.86, ly: 103.9, labelDir: 'left', labelDirMobile: 'down' },
+  {
+    id: 'megrez',
+    star: 'Megrez · δ Ursae Majoris',
+    label: 'cos init',
+    ra: 12.2571,
+    dec: 57.033,
+    mag: 3.31,
+    ly: 80.5,
+    labelDir: 'up-left',
+    hub: true,
+  },
+  {
+    id: 'dubhe',
+    star: 'Dubhe · α Ursae Majoris',
+    label: 'CodeRabbit',
+    ra: 11.0621,
+    dec: 61.751,
+    mag: 1.79,
+    ly: 123,
+    labelDir: 'up',
+  },
+  {
+    id: 'merak',
+    star: 'Merak · β Ursae Majoris',
+    label: 'Skills',
+    ra: 11.0307,
+    dec: 56.383,
+    mag: 2.37,
+    ly: 79.7,
+    labelDir: 'right',
+  },
+  {
+    id: 'phecda',
+    star: 'Phecda · γ Ursae Majoris',
+    label: 'OpenSpec',
+    ra: 11.8972,
+    dec: 53.695,
+    mag: 2.44,
+    ly: 83.2,
+    labelDir: 'down',
+  },
+  {
+    id: 'alioth',
+    star: 'Alioth · ε Ursae Majoris',
+    label: 'MCP',
+    ra: 12.9005,
+    dec: 55.96,
+    mag: 1.77,
+    ly: 82.6,
+    labelDir: 'up',
+    labelDirMobile: 'down',
+  },
+  {
+    id: 'mizar',
+    star: 'Mizar · ζ Ursae Majoris',
+    label: 'Agent',
+    ra: 13.3987,
+    dec: 54.925,
+    mag: 2.27,
+    ly: 82.9,
+    labelDir: 'down',
+  },
+  {
+    id: 'alkaid',
+    star: 'Alkaid · η Ursae Majoris',
+    label: '.md context',
+    ra: 13.7923,
+    dec: 49.313,
+    mag: 1.86,
+    ly: 103.9,
+    labelDir: 'left',
+    labelDirMobile: 'down',
+  },
 ];
 
 /**
@@ -160,7 +226,12 @@ type Baseline = 'auto' | 'middle' | 'hanging';
 
 const LABEL_DIRS: Record<
   LabelDir,
-  { dx: number; dy: number; anchor: 'start' | 'middle' | 'end'; baseline: Baseline }
+  {
+    dx: number;
+    dy: number;
+    anchor: 'start' | 'middle' | 'end';
+    baseline: Baseline;
+  }
 > = {
   up: { dx: 0, dy: -1, anchor: 'middle', baseline: 'auto' },
   down: { dx: 0, dy: 1, anchor: 'middle', baseline: 'hanging' },
@@ -185,7 +256,10 @@ function buildLayout(stage: Stage) {
   const maxY = Math.max(...ys);
   const skyCx = (minX + maxX) / 2;
   const skyCy = (minY + maxY) / 2;
-  const scale = Math.min(stage.figureW / (maxX - minX), stage.figureH / (maxY - minY));
+  const scale = Math.min(
+    stage.figureW / (maxX - minX),
+    stage.figureH / (maxY - minY),
+  );
 
   return BIG_DIPPER.map((def, i) => {
     const brightness = (MAG_MAX - def.mag) / (MAG_MAX - MAG_MIN);
@@ -193,10 +267,13 @@ function buildLayout(stage: Stage) {
     // departure than it looks: Megrez is famously the *faintest* of the seven
     // (mag 3.31), yet it has to read as the anchor here. The other six keep
     // their true magnitude ordering.
-    const coreR = round((def.hub ? 5 : 1.5 + brightness * 2.3) * stage.starScale);
+    const coreR = round(
+      (def.hub ? 5 : 1.5 + brightness * 2.3) * stage.starScale,
+    );
     const bloomR = round(coreR * (def.hub ? 5.4 : 4.6));
     const spikeR = round(coreR * (def.hub ? 6.6 : 5.4));
-    const dir = LABEL_DIRS[(stage.mobile && def.labelDirMobile) || def.labelDir];
+    const dir =
+      LABEL_DIRS[(stage.mobile && def.labelDirMobile) || def.labelDir];
     const gap = bloomR * 0.42 + stage.labelGap;
 
     return {
@@ -300,7 +377,9 @@ function Star({ star, stage }: { star: LaidOutStar; stage: Stage }) {
         dominantBaseline={star.baseline}
         fontSize={star.hub ? stage.hubFontSize : stage.labelFontSize}
         className={
-          star.hub ? 'fill-ink font-mono' : 'fill-cosmic-light font-mono uppercase tracking-widest'
+          star.hub
+            ? 'fill-ink font-mono'
+            : 'fill-cosmic-light font-mono uppercase tracking-widest'
         }
       >
         {star.label}

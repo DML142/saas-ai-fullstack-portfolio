@@ -72,7 +72,8 @@ export function UltraGlow() {
     // and IntegrationsMarquee already measure what CSS alone can't tell them.
     const measure = () => {
       const r = el.getBoundingClientRect();
-      if (r.width > 0) setSize({ w: Math.round(r.width), h: Math.round(r.height) });
+      if (r.width > 0)
+        setSize({ w: Math.round(r.width), h: Math.round(r.height) });
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -91,7 +92,12 @@ export function UltraGlow() {
       gsap.fromTo(
         dashes,
         { strokeDashoffset: 0 },
-        { strokeDashoffset: -100, duration: TRAVEL_S, ease: 'none', repeat: -1 },
+        {
+          strokeDashoffset: -100,
+          duration: TRAVEL_S,
+          ease: 'none',
+          repeat: -1,
+        },
       );
 
       // The "dynamic cloud mask": the noise driving the displacement is itself
@@ -117,9 +123,16 @@ export function UltraGlow() {
   const dashArray = `${DASH} ${100 - DASH}`;
 
   return (
-    <div ref={scopeRef} className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+    <div
+      ref={scopeRef}
+      className="pointer-events-none absolute inset-0 z-0"
+      aria-hidden
+    >
       {/* overflow-visible so the blurred halo isn't clipped at the card's edge */}
-      <svg className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
+      <svg
+        className="absolute inset-0 h-full w-full overflow-visible"
+        aria-hidden
+      >
         <defs>
           <filter id={warpId} x="-25%" y="-25%" width="150%" height="150%">
             <feTurbulence

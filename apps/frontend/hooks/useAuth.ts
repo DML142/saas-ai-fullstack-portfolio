@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStore } from "@/lib/stores/auth.store";
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 interface AuthUser {
   name: string;

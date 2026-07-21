@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { me, refresh } from "@/lib/stores/auth";
-import { useAuthStore } from "@/lib/stores/auth.store";
-import { useEffect } from "react";
+import { me, refresh } from '@/lib/stores/auth';
+import { useAuthStore } from '@/lib/stores/auth.store';
+import { useEffect } from 'react';
 
 export function SessionBootstrap() {
   const setSession = useAuthStore((s) => s.setSession);
