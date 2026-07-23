@@ -1,27 +1,55 @@
 import { create } from 'zustand';
-
-export interface Workspace {
-  id: string;
-  name: string;
-}
-
-/** Placeholder data — the real chat backend (workspace persistence, message
- * history) is a separate future change. This just proves the switcher UI and
- * shared active-selection state work end to end. */
-const PLACEHOLDER_WORKSPACES: Workspace[] = [
-  { id: 'w1', name: 'Getting started' },
-  { id: 'w2', name: 'Refactor auth flow' },
-  { id: 'w3', name: 'Landing page copy' },
-];
+import { Workspace } from './chat';
 
 interface WorkspaceState {
   workspaces: Workspace[];
-  activeId: string;
+  activeId: string | null;
+  status: 'loading' | 'loaded' | 'error';
+  setWorkspace: (workspaces: Workspace[]) => void;
+  addWorkspace: (workspace: Workspace) => void;
+  updateWorkspace: (workspaceId: string, name: string) => void;
+  deleteWorkspace: (workspaceId: string) => void;
   setActive: (id: string) => void;
+  setError: () => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
-  workspaces: PLACEHOLDER_WORKSPACES,
-  activeId: PLACEHOLDER_WORKSPACES[0].id,
+  workspaces: [],
+  activeId: null,
+  status: 'loading',
+  setWorkspace: (workspaces) =>
+    set((s) => ({
+      workspaces,
+      status: 'loaded',
+      // Keep the current selection if it's still valid; otherwise default to
+      // the first workspace (or null, if the user genuinely has none yet).
+      activeId:
+        s.activeId && workspaces.some((w) => w.id === s.activeId)
+          ? s.activeId
+          : (workspaces[0]?.id ?? null),
+    })),
+  addWorkspace: (workspace) =>
+    set((s) => ({
+      workspaces: [...s.workspaces, workspace],
+      activeId: workspace.id,
+    })),
+  updateWorkspace: (id, name) =>
+    set((s) => {
+      const workspaces = s.workspaces.map((w) =>
+        w.id === id ? { ...w, name } : w,
+      );
+      return {
+        workspaces,
+      };
+    }),
+  deleteWorkspace: (id) =>
+    set((s) => {
+      const workspaces = s.workspaces.filter((w) => w.id !== id);
+      return {
+        workspaces,
+        activeId: s.activeId === id ? (workspaces[0]?.id ?? null) : s.activeId,
+      };
+    }),
+  setError: () => set({ status: 'error' }),
   setActive: (id) => set({ activeId: id }),
 }));

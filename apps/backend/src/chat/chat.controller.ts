@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -13,6 +15,7 @@ import { ChatService } from './chat.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { Role } from 'generated/prisma/enums';
+import { updateWorkspaceDto } from './dto/update_workspace.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
@@ -29,6 +32,22 @@ export class ChatController {
   postWorkspace(@Req() req: Request, @Body() body: CreateWorkspaceDto) {
     const user = req.user as { userId: string; role: Role };
     return this.chatService.postWorkspace(user.userId, body.name);
+  }
+
+  @Patch('workspaces/:id')
+  renameWorkspace(
+    @Req() req: Request,
+    @Param('id') workpaceId: string,
+    @Body() body: updateWorkspaceDto,
+  ) {
+    const user = req.user as { userId: string; role: Role };
+    return this.chatService.renameWorkspace(user.userId, workpaceId, body.name);
+  }
+
+  @Delete('workspaces/:id')
+  deleteWorkspace(@Req() req: Request, @Param('id') workspaceId: string) {
+    const user = req.user as { userId: string; role: Role };
+    return this.chatService.deleteWorkspace(user.userId, workspaceId);
   }
 
   @Get('workspaces/:id/messages')

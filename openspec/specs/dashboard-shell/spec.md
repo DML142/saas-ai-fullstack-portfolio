@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the protected dashboard route and its chrome — sidebar, workspace/chat switcher, profile display, settings, and the workspace usage/quota view. Does not include real chat functionality (message persistence, simulated replies) or real subscription-tier gating, both of which are separate future changes.
+Defines the protected dashboard route and its chrome — sidebar, workspace/chat switcher, profile display, settings, and the workspace usage/quota view. Chat functionality itself (message persistence, simulated replies, real-time delivery) is specified separately under the `chat` capability. Real subscription-tier gating remains a future change.
 
 ## Requirements
 
@@ -25,22 +25,23 @@ The system SHALL provide a persistent sidebar within the dashboard for navigatin
 - **THEN** the sidebar is visible and its navigation entries are reachable
 
 ### Requirement: Workspace/chat switcher
-The system SHALL provide a Claude-Desktop-style switcher listing available workspaces/chats, allowing the user to select one as active, without requiring any backend-persisted chat data.
+The system SHALL provide a Claude-Desktop-style switcher listing the authenticated user's real, persisted workspaces, allowing the user to select one as active and to create a new workspace.
 
-#### Scenario: Switcher lists placeholder workspaces
+#### Scenario: Switcher lists the user's real workspaces
 - **WHEN** the dashboard loads
-- **THEN** the switcher displays a list of workspace entries and one is selected as active by default
+- **THEN** the switcher fetches and displays the authenticated user's persisted workspaces, with one selected as active
 
 #### Scenario: Selecting a workspace updates the active selection
 - **WHEN** a user selects a different workspace entry in the switcher
-- **THEN** the main panel reflects the newly selected workspace as active
+- **THEN** the main panel reflects the newly selected workspace as active, loading that workspace's message history
 
-### Requirement: Empty/placeholder chat panel
-The system SHALL render the main chat panel in a clearly non-functional placeholder state, since no chat backend exists yet.
+#### Scenario: Creating a new workspace
+- **WHEN** a user creates a new workspace from the switcher
+- **THEN** a new workspace is persisted for that user, appears in the switcher, and becomes the active selection
 
-#### Scenario: Chat panel shows no fabricated history
-- **WHEN** a user views the main panel for any workspace
-- **THEN** no chat messages are displayed as if they were real conversation history, and the panel visually communicates that sending is not yet available
+#### Scenario: Switcher reflects loading state
+- **WHEN** the workspace list has not finished loading
+- **THEN** the switcher does not render a false-empty or false-populated list, and does not error
 
 ### Requirement: Profile display
 The system SHALL display the authenticated user's real session data (email, role) in the dashboard, without inventing data the backend doesn't provide.

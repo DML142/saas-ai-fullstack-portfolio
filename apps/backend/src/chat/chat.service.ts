@@ -26,6 +26,24 @@ export class ChatService {
     });
   }
 
+  async renameWorkspace(userId: string, workspaceId: string, name: string) {
+    //using updateMany cuz delete only support find by id
+    const result = await this.prisma.workspace.updateMany({
+      where: { id: workspaceId, userId },
+      data: { name },
+    });
+    if (result.count === 0) throw new NotFoundException();
+    return this.prisma.workspace.findUnique({ where: { id: workspaceId } });
+  }
+
+  async deleteWorkspace(userId: string, workspaceId: string) {
+    const result = await this.prisma.workspace.deleteMany({
+      where: { id: workspaceId, userId },
+    });
+    if (result.count === 0) throw new NotFoundException();
+    return { id: workspaceId };
+  }
+
   async getMessages(userId: string, workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
