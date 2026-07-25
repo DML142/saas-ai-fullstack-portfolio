@@ -16,6 +16,9 @@ import { RegisterDto } from './dto/register.dto';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { Role } from 'generated/prisma/enums';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -105,5 +108,27 @@ export class AuthController {
   @Get('admin-check')
   adminCheck(@Req() req: Request) {
     return { message: 'You are admin!', user: req.user };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('resend-verification')
+  resend(@Req() req: Request) {
+    const user = req.user as { userId: string; role: Role };
+    return this.authService.resendVerificationEmail(user.userId);
+  }
+
+  @Post('verify-email')
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.token);
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
   }
 }

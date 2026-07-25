@@ -6,9 +6,16 @@ import { PasswordModule } from 'src/password/password.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { PrismaModule } from 'src/PrismaModule';
 import { JwtStrategy } from './jwt.strategy';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports: [JwtModule.register({}), PasswordModule, RedisModule, PrismaModule],
+  imports: [
+    JwtModule.register({}),
+    PasswordModule,
+    RedisModule,
+    PrismaModule,
+    MailModule,
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
 })

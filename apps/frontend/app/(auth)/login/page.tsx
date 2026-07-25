@@ -55,7 +55,7 @@ export default function LoginPage() {
       // timeline actually engages and jumps it to the hidden keyframe. That
       // flash-then-hide-then-animate sequence is exactly what a CSS-only
       // version of this reveal produced.
-      gsap.fromTo(
+      const tween = gsap.fromTo(
         groups,
         { autoAlpha: 0, y: 16 },
         {
@@ -64,8 +64,30 @@ export default function LoginPage() {
           duration: 0.5,
           ease: 'power2.out',
           stagger: 0.15,
+          // Once revealed, strip GSAP's inline styles so the elements rest in
+          // their natural (visible) CSS state — nothing left for a later
+          // context revert to strand at autoAlpha:0.
+          clearProps: 'visibility,opacity,transform',
         },
       );
+
+      // Fail-open safety net. This is a login form, so it must never stay
+      // invisible: the reveal above hides it (autoAlpha:0) and only the tween
+      // brings it back, and GSAP's tween advances on requestAnimationFrame —
+      // which the browser PAUSES for a backgrounded/non-compositing tab. If the
+      // tab is loaded in the background, the `from` state is applied but the
+      // tween can't progress, leaving the form hidden until focus. setTimeout
+      // (unlike rAF) still fires in that state, so this forces the final
+      // visible state if the tween hasn't finished by the time it should have.
+      // On a normal foreground load the tween completes first (~0.8s) and this
+      // is a harmless no-op.
+      const failsafe = window.setTimeout(() => {
+        if (tween.progress() < 1 && formRef.current) {
+          gsap.set(groups, { clearProps: 'visibility,opacity,transform' });
+        }
+      }, 1500);
+
+      return () => window.clearTimeout(failsafe);
     },
     { dependencies: [reducedMotion], scope: formRef },
   );

@@ -1,12 +1,14 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { Role } from 'generated/prisma/enums';
+import { MailService } from 'src/mail/mail.service';
 import { PasswordService } from 'src/password/password.service';
 import { PrismaService } from 'src/PrismaService';
 import { RedisService } from 'src/redis/redis.service';
@@ -24,7 +26,10 @@ export class AuthService {
     private passwordService: PasswordService,
     private redisService: RedisService,
     private prisma: PrismaService,
+    private mailService: MailService,
   ) {}
+
+  private readonly logger = new Logger(AuthService.name);
 
   async issueToken(
     userId: string,
@@ -55,8 +60,27 @@ export class AuthService {
       Number(process.env.JWT_REFRESH_EXPIRES_IN),
     );
     await this.redisService.addToFamily(familyId, jti);
+    await this.redisService.addToUserFamilies(userId, familyId);
 
     return { accessToken, refreshToken };
+  }
+
+  private async revokeAllSessions(userId: string) {
+    const families = await this.redisService.getUserFamilies(userId);
+    for (const familyId of families) {
+      const jtis = await this.redisService.getFamilyMembers(familyId);
+
+      //sort undefined or null
+      const tokenKeys = jtis
+        .filter((jti) => Boolean(jti))
+        .map((jti) => `refresh:${jti}`);
+
+      const keysToDelete = [...tokenKeys, `family:${familyId}`];
+
+      await this.redisService.del(...keysToDelete);
+    }
+
+    await this.redisService.del(`user:${userId}:families`);
   }
 
   async refresh(oldToken: string) {
@@ -122,6 +146,12 @@ export class AuthService {
 
     const token = await this.issueToken(user.id, user.role);
 
+    try {
+      await this.sendVerificationEmail(user.id, user.email);
+    } catch (err) {
+      this.logger.error('Failed to queue verification email', err);
+    }
+
     return {
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
@@ -164,6 +194,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        emailVerified: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -175,5 +206,64 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private async sendVerificationEmail(userId: string, email: string) {
+    const token = randomBytes(32).toString('hex');
+    await this.redisService.set(
+      `verify:${token}`,
+      userId,
+      Number(process.env.EMAIL_VERIFICATION_TOKEN_TTL),
+    );
+    await this.mailService.queueVerificationEmail(email, token);
+  }
+
+  async resendVerificationEmail(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, emailVerified: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.emailVerified)
+      throw new BadRequestException('Email already verified');
+    await this.sendVerificationEmail(user.id, user.email);
+  }
+
+  async verifyEmail(token: string) {
+    const userId = await this.redisService.getDel(`verify:${token}`);
+    if (!userId) throw new BadRequestException('Invalid or expired token');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+    });
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+    if (user) {
+      const token = randomBytes(32).toString('hex');
+      await this.redisService.set(
+        `reset:${token}`,
+        user.id,
+        Number(process.env.PASSWORD_RESET_TOKEN_TTL),
+      );
+      await this.mailService.queuePasswordResetEmail(user.email, token);
+    }
+    return { message: 'If email exist, we sent a reset link' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const userId = await this.redisService.getDel(`reset:${token}`);
+    if (!userId) throw new BadRequestException('Invalid or expired token');
+    const passwordHash = await this.passwordService.hash(newPassword);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    await this.revokeAllSessions(userId);
   }
 }

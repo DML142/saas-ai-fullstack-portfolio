@@ -270,7 +270,7 @@ export function Sidebar() {
             {/* Explicit {' '} rather than relying on the newline after
                 </span> — JSX drops that space here, which renders as
                 "…workspaceNameand all of its messages". */}
-            Delete <span className="text-ink">{deleteTarget?.name}</span> and
+            Delete <span className="text-ink">{deleteTarget?.name} </span>and
             all of its messages? This can&apos;t be undone.
           </p>
           <div className="flex justify-end gap-2">

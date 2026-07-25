@@ -27,6 +27,7 @@ enum MessageRole {
 model User {
   id String @id @default(uuid())
   email String @unique()
+  emailVerified Boolean @default(false)
   passwordHash String
   role Role @default(USER)
   workspaces Workspace[]
@@ -50,16 +51,4 @@ model Message {
   role MessageRole
   content String
   createdAt DateTime @default(now())
-}
-
-model Shluxa {
-  id String @id @default(uuid())
-  name String //pizda ebanaya
-  sexi Sex[]
-}
-
-model Sex {
-  id String @id @default(uuid())
-  shluxaId String
-  shluxa Shluxa @relation(fields: [shluxaId], references: [id])
 }

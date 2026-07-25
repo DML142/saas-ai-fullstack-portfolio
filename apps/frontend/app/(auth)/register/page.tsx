@@ -54,7 +54,9 @@ export default function RegisterPage() {
       if (reducedMotion) return;
       const groups = formRef.current?.querySelectorAll('[data-anim]');
       if (!groups?.length) return;
-      gsap.fromTo(
+      // GSAP sets the `from` values synchronously before paint, so there's no
+      // flash of the fully-visible state that a CSS `animation-delay` produces.
+      const tween = gsap.fromTo(
         groups,
         { autoAlpha: 0, y: 16 },
         {
@@ -63,8 +65,25 @@ export default function RegisterPage() {
           duration: 0.5,
           ease: 'power2.out',
           stagger: 0.15,
+          // Rest in the natural (visible) CSS state once revealed — nothing
+          // left for a later context revert to strand at autoAlpha:0.
+          clearProps: 'visibility,opacity,transform',
         },
       );
+
+      // Fail-open safety net (see login/page.tsx for the full rationale). This
+      // is an auth form and must never stay invisible: the reveal hides it and
+      // only the tween brings it back, but GSAP's tween advances on
+      // requestAnimationFrame — paused for a backgrounded/non-compositing tab.
+      // setTimeout still fires there, so it forces the visible state if the
+      // tween hasn't finished when it should have; a no-op on normal loads.
+      const failsafe = window.setTimeout(() => {
+        if (tween.progress() < 1 && formRef.current) {
+          gsap.set(groups, { clearProps: 'visibility,opacity,transform' });
+        }
+      }, 1500);
+
+      return () => window.clearTimeout(failsafe);
     },
     { dependencies: [reducedMotion], scope: formRef },
   );
