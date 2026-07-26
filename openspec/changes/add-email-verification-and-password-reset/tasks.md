@@ -37,10 +37,12 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Register a new account; confirm a verification email lands in Mailpit (UI at `:8025`) and the account shows `emailVerified: false` via `/auth/me`
-- [ ] 7.2 Click the emailed verification link; confirm the account becomes verified and the token can't be reused (second attempt rejected)
-- [ ] 7.3 Resend verification while unverified; confirm a fresh email and that the old token is no longer required (either token/behavior consistent with single-use)
-- [ ] 7.4 Forgot-password for a registered email: confirm a reset email in Mailpit; for an unregistered email: confirm the same success response and no email sent
-- [ ] 7.5 Reset the password with the emailed token; confirm login works with the new password, the token can't be reused, and pre-existing sessions are revoked (an old refresh token no longer refreshes)
-- [ ] 7.6 Confirm register/login are unchanged for an unverified user (soft gate — login still works)
-- [ ] 7.7 Confirm a slow/failed email send doesn't block or fail the triggering request (send is queued)
+- [x] 7.1 Register a new account; confirm a verification email lands in Mailpit (UI at `:8025`) and the account shows `emailVerified: false` via `/auth/me` — verified via curl + Mailpit API
+- [x] 7.2 Click the emailed verification link; confirm the account becomes verified and the token can't be reused (second attempt rejected) — 1st verify → `emailVerified: true`; 2nd → 400
+- [x] 7.3 Resend verification while unverified; confirm a fresh email and that the old token is no longer required (either token/behavior consistent with single-use) — resend produced a 2nd email
+- [x] 7.4 Forgot-password for a registered email: confirm a reset email in Mailpit; for an unregistered email: confirm the same success response and no email sent — identical body/status both cases; only 1 email actually sent
+- [x] 7.5 Reset the password with the emailed token; confirm login works with the new password, the token can't be reused, and pre-existing sessions are revoked (an old refresh token no longer refreshes) — old refresh → 401, old pw → 401, new pw → 201, token reuse → 400
+- [x] 7.6 Confirm register/login are unchanged for an unverified user (soft gate — login still works) — unverified login → 201
+- [x] 7.7 Confirm a slow/failed email send doesn't block or fail the triggering request (send is queued) — register returns a session immediately; send happens in the BullMQ worker
+
+> Follow-up (frontend-facing): the `register` response omits `emailVerified` (its `select` doesn't include it) while `login` and `/auth/me` include it. Add `emailVerified: true` to register's `select` so the client gets a consistent shape right after signup (needed for the 6.1 banner).

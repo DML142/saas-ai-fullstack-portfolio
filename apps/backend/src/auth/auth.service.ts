@@ -138,6 +138,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        emailVerified: true,
         role: true,
         createdAt: true,
         updatedAt: true,
