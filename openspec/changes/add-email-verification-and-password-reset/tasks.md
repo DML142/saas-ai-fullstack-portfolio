@@ -26,14 +26,14 @@
 
 ## 5. Frontend: client + pages [you implement — backend-integration]
 
-- [ ] 5.1 Add client functions for the four endpoints (verify-email, resend-verification, forgot-password, reset-password) following the existing `auth.ts` / `authFetch` patterns
-- [ ] 5.2 `/verify-email` page: read `token` from the query string, POST it, show success/failure, redirect appropriately
-- [ ] 5.3 `/forgot-password` page: email input → POST → show the neutral "if that email exists, we sent a link" confirmation
-- [ ] 5.4 `/reset-password` page: read `token` from query string + new-password form (Zod mirroring backend rules) → POST → redirect to `/login` on success
+- [x] 5.1 Add client functions for the four endpoints (verify-email, resend-verification, forgot-password, reset-password) following the existing `auth.ts` / `authFetch` patterns — `resendVerification` delegates to `authFetch` (auto-refresh); `parseOrThrow` now tolerates empty 201 bodies; `AuthUser` gained `emailVerified`
+- [x] 5.2 `/verify-email` page: read `token` from the query string, POST it, show success/failure, redirect appropriately — status page (verifying/success/error), StrictMode double-invoke guarded (single-use token); updates the session store so the banner clears live. Verified in-browser: success + reused-token error path
+- [x] 5.3 `/forgot-password` page: email input → POST → show the neutral "if that email exists, we sent a link" confirmation — verified in-browser end-to-end
+- [x] 5.4 `/reset-password` page: read `token` from query string + new-password form (Zod mirroring backend rules) → POST → redirect to `/login` on success — added confirm-password field; verified in-browser: valid reset → redirect → new password logs in (old rejected)
 
 ## 6. Frontend: unverified banner [AI-authored]
 
-- [ ] 6.1 Surface an "email not verified — resend" banner to logged-in-but-unverified users (reads `emailVerified` from the session/`useAuth`), wired to the resend endpoint
+- [x] 6.1 Surface an "email not verified — resend" banner to logged-in-but-unverified users (reads `emailVerified` from the session/`useAuth`), wired to the resend endpoint — `VerificationBanner` in the dashboard shell (`(dashboard)/dashboard/layout.tsx`); reads `emailVerified` from the auth store directly (not `useAuth`, which drops the flag); resend delegates to `resendVerification` with store-backed `getToken`/`setSession`/`clearSession`. Verified in-browser: banner shows for unverified session, resend → "sent" state → real email in Mailpit. Also fixed the `onSessionLost: () => null` → `() => void` signature nit flagged in 5.1.
 
 ## 7. Verification
 

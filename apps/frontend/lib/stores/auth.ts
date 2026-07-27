@@ -3,6 +3,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 export interface AuthUser {
   id: string;
   email: string;
+  emailVerified: boolean;
   role: 'USER' | 'PREMIUM' | 'ADMIN';
   createdAt: string;
   updatedAt: string;
@@ -25,7 +26,8 @@ async function parseOrThrow(res: Response) {
     const body = await res.json().catch(() => null);
     throw new Error(body?.message ?? 'Request failed');
   }
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export async function login(email: string, password: string): Promise<Session> {
@@ -72,6 +74,57 @@ export async function me(accessToken: string): Promise<AuthUser> {
     credentials: 'include',
   });
   return parseOrThrow(res);
+}
+
+//email verification work here
+export async function verifyEmail(token: string): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  return parseOrThrow(res);
+}
+
+export async function forgotPassword(
+  email: string,
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return parseOrThrow(res);
+}
+
+export async function resetPassword(
+  token: string,
+  password: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  return parseOrThrow(res);
+}
+
+export async function resendVerification(
+  getToken: () => string | null,
+  onRefreshed: (session: { accessToken: string; user: AuthUser }) => void,
+  onSessionLost: () => void,
+): Promise<void> {
+  const res = await authFetch(
+    `${API_URL}/auth/resend-verification`,
+    { method: 'POST' },
+    getToken,
+    onRefreshed,
+    onSessionLost,
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.message ?? 'Request failed');
+  }
 }
 
 export async function authFetch(

@@ -1,6 +1,7 @@
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { ChatSocketBootstrap } from '@/components/dashboard/ChatSocketBootstrap';
 import { Sidebar } from '@/components/dashboard/Sidebar';
+import { VerificationBanner } from '@/components/dashboard/VerificationBanner';
 import { WorkspaceBootstrap } from '@/components/dashboard/WorkspaceBootstrap';
 
 export default function DashboardLayout({
@@ -20,7 +21,13 @@ export default function DashboardLayout({
         <WorkspaceBootstrap />
         <ChatSocketBootstrap />
         <Sidebar />
-        <main className="min-w-0 flex-1">{children}</main>
+        {/* Column so the unverified banner stacks above the page's own scroll
+            region; min-h-0 lets the children area shrink and keep its internal
+            scroll instead of pushing the banner off-screen. */}
+        <main className="flex min-w-0 flex-1 flex-col">
+          <VerificationBanner />
+          <div className="min-h-0 flex-1">{children}</div>
+        </main>
       </div>
     </RequireAuth>
   );

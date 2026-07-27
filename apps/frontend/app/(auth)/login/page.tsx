@@ -128,6 +128,14 @@ export default function LoginPage() {
             {form.formState.errors.password.message}
           </p>
         )}
+        {/* Sits with the password field — the conventional spot users look for
+            reset, and the only entry point to the /forgot-password flow. */}
+        <Link
+          href="/forgot-password"
+          className="self-end text-xs text-cosmic-light underline decoration-cosmic-light/40 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink/60"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}

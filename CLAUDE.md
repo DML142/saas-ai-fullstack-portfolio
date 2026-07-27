@@ -235,6 +235,17 @@ The finished application should look like something a startup could realisticall
 - class-validator
 - class-transformer
 
+> **Email — current state (dev only):** All transactional email (verification,
+> password reset) is sent via **Nodemailer through Mailpit**, a local SMTP
+> catcher in the Docker stack (`SMTP_HOST=localhost`, `SMTP_PORT=1025`, UI at
+> `:8025`). **Nothing is wired to a real email provider yet** — emails never
+> leave the machine and never reach an actual inbox; they're only viewable in
+> the Mailpit UI. This is intentional for now. Going to production means
+> pointing the `SMTP_*` env vars at a real provider (Gmail SMTP, Resend,
+> Postmark, …) and adding an `auth: { user, pass }` block to the transport in
+> `email.processor.ts` (it currently sends unauthenticated, which only Mailpit
+> accepts).
+
 ---
 
 ## Database
@@ -315,6 +326,29 @@ Use Redis for:
 - rate limiting
 - session-related data
 - frequently requested resources
+
+> **Security hardening — NOT yet implemented (deferred):** There is currently
+> **no rate limiting, bot protection, or brute-force defense** on any route.
+> Two separate layers are planned, both deferred:
+>
+> 1. **App-level rate limiting (do in code, before deploy).** Redis-backed
+>    throttle keyed by IP + route (either `@nestjs/throttler` with a Redis store,
+>    or a manual Redis counter for learning value). This is the real defense for
+>    credential brute-force and email bombing, and works locally with the
+>    existing Redis. Routes that need it most: `POST /auth/login` (credential
+>    stuffing), `/auth/register` (spam accounts), `/auth/forgot-password` &
+>    `/auth/resend-verification` (email bombing), `/auth/reset-password` &
+>    `/auth/verify-email` (token guessing — low risk given 256-bit tokens, but
+>    still worth a cap).
+> 2. **Cloudflare edge (deploy-time only, cannot be built/tested locally).**
+>    Volumetric DDoS + WAF come from proxying the deployed domain through
+>    Cloudflare (DNS → Cloudflare → server) — a dashboard config, not code.
+>    Optionally add **Cloudflare Turnstile** (free CAPTCHA-alternative) widgets
+>    on the login/register/forgot-password forms, verifying the token
+>    server-side. Needs Cloudflare site+secret keys, so it's a post-deploy task.
+>
+> When picking this up, treat the app-level layer as an explain-first backend
+> feature (per Rules 1–7), not a quick bolt-on.
 
 ---
 
