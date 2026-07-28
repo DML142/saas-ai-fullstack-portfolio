@@ -9,6 +9,7 @@ import { ChatModule } from './chat/chat.module';
 import Redis from 'ioredis';
 import { BullModule } from '@nestjs/bullmq';
 import { MailModule } from './mail/mail.module';
+import { BillingModule } from './billing/billing.module';
 
 const connection = new Redis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
@@ -22,6 +23,7 @@ const connection = new Redis(process.env.REDIS_URL!, {
     PasswordModule,
     RedisModule,
     ChatModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

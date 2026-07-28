@@ -158,6 +158,18 @@ Avoid tutorial-level solutions whenever possible.
 
 ---
 
+## Rule 8 — Show structure and reference shapes before I implement
+
+When a new backend feature or module is about to be built, before I write any code the AI should ground the work in what already exists:
+
+1. **Show the relevant file structure** — where the new files go, and which existing files they touch, as a tree.
+2. **Show the shape of the actual working files** I'll model the new code on — the real modules/controllers/services/DTOs already in the repo, quoted as small excerpts (following Rule 5: shapes and patterns, not full implementations to copy wholesale).
+3. Point out the specific spots in those files where the new feature plugs in (the endpoint, the `select`, the queue branch, etc.).
+
+The goal is that I implement against the codebase's real conventions, not a generic tutorial or the AI's memory of "typical NestJS." This applies to backend work under Rules 1–7. For AI-authored frontend code it's optional — do it when it aids the explanation.
+
+---
+
 ## Frontend Exception to Rules 1–5
 
 Rules 1–5 (explain-first, small examples only, I implement) apply fully to **backend** work.
@@ -295,12 +307,30 @@ Use Guards.
 
 Stripe
 
+Plans (monthly only for now — no yearly yet):
+
+- **Free** — default, no subscription
+- **Lite** — $100/mo
+- **Pro** — $200/mo
+- **Ultra** — $400/mo
+
 Implement:
 
 - subscriptions
 - webhooks
 - plan upgrades
 - billing portal
+
+> **Billing architecture — chosen patterns (portfolio-quality):**
+> - **Hosted Stripe Checkout + Billing Portal** (not custom Elements) — minimal PCI scope.
+> - **Stripe is the source of truth; the DB is a webhook-synced cache.** Access reads a DB `tier` that ONLY webhook handlers write — never granted from the checkout redirect.
+> - **Dedicated `Subscription` Prisma model** (+ `stripeCustomerId` on `User`), not flat fields.
+> - **Tier is a separate axis from RBAC role.** New `tier` enum `FREE | LITE | PRO | ULTRA` gates features/usage; `Role` (USER/PREMIUM/ADMIN — see `openspec/specs/rbac`) stays for permissions. The pricing UI already treats plan names as marketing labels decoupled from roles.
+> - **Webhook route uses the RAW body** for signature verification (bypass the global body parser) and is **idempotent** (persist processed Stripe event IDs).
+> - Key events: `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.paid`, `invoice.payment_failed`. Grant access by **product**, checking `status`.
+> - **Prices live in Stripe**, referenced by env price IDs (`STRIPE_PRICE_LITE/PRO/ULTRA`) — the $ amounts in the pricing UI are marketing copy, not the billed amount.
+> - Webhook updates the DB and returns 200 fast, **enqueuing side-effects** (emails, etc.) on the existing BullMQ `email` queue.
+> - Tested locally with the **Stripe CLI** (`stripe listen --forward-to`); billing endpoints + webhook get Swagger docs and tests.
 
 ---
 
@@ -465,7 +495,7 @@ Usability-focused, same palette/brand but without the hero's heavy effect layer 
 
 The site markets this CLI tool and hosts a companion SaaS layer around it:
 
-- **Subscription tiers** (Free / Pro / Business, via Stripe) gate advanced features and usage limits.
+- **Subscription tiers** (Free / Lite $100 / Pro $200 / Ultra $400 per month, via Stripe; monthly only for now) gate advanced features and usage limits.
 - **COS Assistant** (dashboard) — a lightweight in-browser chat experience included with paid tiers, similar in spirit to Claude Desktop's chat/project switching or Google AI Studio. Users can create and switch between chats/workspaces, import/export projects.
 - **COS Assistant is a preview/demo concept, not a real AI product**: no LLM API is connected, no real code/IDE logic runs. A message is stored in the database, the server waits, then sends back a simulated reply — enough to demonstrate the full chat UX and plumbing (persistence, auth-gated access, possibly WebSockets) without pretending to be a functional AI assistant.
 - A **"workspace"** is a route or modal showing per-project state: usage limits, detected config/tool issues, remaining restarts/quota — not a literal coding environment.
@@ -519,11 +549,12 @@ No real AI backend — this is a UX/plumbing demo, not a functional assistant:
 
 ## Subscription
 
-Plans:
+Plans (monthly only for now):
 
-- Free
-- Pro
-- Business
+- Free — default, no subscription
+- Lite — $100/mo
+- Pro — $200/mo
+- Ultra — $400/mo
 
 Stripe controls access to COS Assistant and usage limits.
 
