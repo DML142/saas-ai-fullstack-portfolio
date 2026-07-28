@@ -4,19 +4,13 @@ import { AmbientStarField } from '@/components/features/AmbientStarField';
 import { PlanCard, type Plan } from './PlanCard';
 
 /**
- * Declared in price-ascending order, which is also DOM order — so keyboard and
- * screen-reader users move through the plans in the order the prices actually
- * go. `orderClass` reorders the *visual* columns on desktop only (Lite, Ultra,
- * Pro), putting the most expensive plan in the dominant centre slot rather than
- * the conventional "middle = recommended" position. On mobile the grid is a
- * single column and `order` is never applied, so the stack simply follows DOM
- * order — there's no centre to compete for, and Ultra's glow does the
- * differentiating regardless of where it sits.
+ * Declared in price-ascending order, which is also DOM order, so keyboard and
+ * screen-reader users move through the plans by price. `orderClass` reorders
+ * the visual columns on desktop only (Lite, Ultra, Pro), putting Ultra in the
+ * centre; on mobile it's a single column following DOM order.
  *
- * These names are marketing labels only. They deliberately do not map onto the
- * backend's real RBAC roles (USER / PREMIUM / ADMIN — see
- * openspec/specs/rbac/spec.md); wiring tiers to actual gating is separate
- * backend work, not part of this section.
+ * These names are marketing labels only — they don't map onto the backend's
+ * RBAC roles (USER / PREMIUM / ADMIN); wiring tiers to gating is separate work.
  */
 const PLANS: Plan[] = [
   {
@@ -64,11 +58,8 @@ const PLANS: Plan[] = [
 
 export function PricingSection() {
   return (
-    // Dialled down from the hero's default (1.4), but not by much: verified in
-    // browser that 0.6 was genuinely imperceptible on this section's smaller
-    // text — not subtle, invisible — while 10x (6px) proved the filter itself
-    // works fine. 1.1 is close enough to the hero's proven-visible value to
-    // actually read, while still slightly gentler.
+    // Slightly gentler than the hero's 1.4 — enough to read on this section's
+    // smaller text without being as strong as the hero.
     <ChromaticAberration offset={1.1}>
       <section id="pricing" className="relative overflow-hidden bg-bg">
         <AmbientStarField />
@@ -84,15 +75,10 @@ export function PricingSection() {
             </p>
           </div>
 
-          {/* Ultra's track is wider (1.2fr vs 1fr) — a real layout size increase,
-              not a `transform: scale()` on the card. Scaling would distort
-              UltraGlow's stroke widths and blur radii out of proportion with
-              the rest of the page; a wider grid track just gives Ultra more
-              actual space, which UltraGlow's own ResizeObserver already
-              measures and adapts to with no changes needed there. `order`
-              places items into visual track order, so this ratio always lands
-              on whichever card is visually centred (Ultra), regardless of DOM
-              order. */}
+          {/* Ultra's track is wider (1.2fr vs 1fr) — a real layout size, not a
+              `transform: scale()` (which would distort UltraGlow's strokes and
+              blur). `order` places the wide track under the visually centred
+              card (Ultra), regardless of DOM order. */}
           <ul className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 md:grid-cols-[1fr_1.2fr_1fr] md:gap-5">
             {PLANS.map((plan) => (
               <PlanCard key={plan.id} plan={plan} />

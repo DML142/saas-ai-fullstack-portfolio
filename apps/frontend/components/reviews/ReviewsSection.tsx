@@ -6,10 +6,8 @@ import { FaqList } from './FaqList';
 export function ReviewsSection() {
   return (
     <section id="reviews" className="relative overflow-hidden bg-bg">
-      {/* Reused as-is from the features section — dim, parallaxing,
-          reduced-motion-safe. StarGradientDefs is already mounted once on the
-          page by FeaturesSection, which is what the StarMarks below resolve
-          against; nothing here needs to remount it. */}
+      {/* Reused from the features section. StarGradientDefs is already mounted
+          by FeaturesSection, so the StarMarks below resolve against it. */}
       <AmbientStarField />
 
       <div className="relative z-10 flex flex-col items-center gap-32 px-6 py-24 md:gap-40 md:py-32">

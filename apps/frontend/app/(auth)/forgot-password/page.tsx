@@ -20,13 +20,12 @@ const forgotSchema = z.object({
 });
 
 export default function ForgotPasswordPage() {
-  // The backend answers identically whether or not the email exists (no
-  // enumeration), so the UI mirrors that: on any successful request we show
-  // the same neutral confirmation and never reveal account existence.
+  // The backend answers identically whether or not the email exists, so the UI
+  // shows the same neutral confirmation and never reveals account existence.
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   // A stable outer <div> owns the ref across both renders (form → confirmation),
-  // so the GSAP scope survives the state swap without retyping the ref per tag.
+  // so the GSAP scope survives the state swap.
   const rootRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
 
@@ -40,8 +39,8 @@ export default function ForgotPasswordPage() {
       await forgotPassword(values.email);
       setSubmitted(true);
     } catch {
-      // The endpoint itself always succeeds; only a network/transport failure
-      // lands here, so this is a generic retry prompt, not "email not found".
+      // Only a network failure lands here (the endpoint always succeeds), so
+      // this is a generic retry, not "email not found".
       setServerError('Something went wrong. Please try again.');
     }
   }

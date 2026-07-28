@@ -7,15 +7,12 @@ import { StarGradientDefs } from './starVisuals';
 export function FeaturesSection() {
   return (
     <section id="features" className="relative overflow-hidden bg-bg">
-      {/* Three depth layers, far to near: the dim ambient field (parallaxes
-          slowly, survives reduced motion), then the hero's own drifting
-          StarField reused verbatim so this section's sky is literally the
-          home page's sky, then the constellation on top. */}
+      {/* Three depth layers, far to near: the dim ambient field, the hero's
+          drifting StarField reused verbatim, then the constellation on top. */}
       <AmbientStarField />
       <StarField />
 
-      {/* Gradient defs for every star mark in this section, mounted once —
-          both parts reference them by id. */}
+      {/* Gradient defs for this section's star marks, mounted once. */}
       <StarGradientDefs />
 
       {/* content sits above the star layers (z-0) */}
@@ -28,11 +25,8 @@ export function FeaturesSection() {
           <InitConstellation />
         </div>
 
-        {/* Part 2 — COS Code Features (scroll pillar). "Everything from the
-            box" is section-level tagline copy per design.md — not one of the
-            four feature-stars, just the line that frames them. Header and
-            tagline sit in their own tight group so only *that* gap shrinks;
-            the generous gap to the pillar below is unchanged. */}
+        {/* Part 2 — COS Code Features (scroll pillar). Header and tagline sit
+            in their own tight group so only that gap shrinks. */}
         <div className="flex flex-col items-center gap-16 px-6 py-24 md:gap-24">
           <div className="flex flex-col items-center gap-4 md:gap-6">
             <h2 className="font-display text-4xl text-ink md:text-6xl">

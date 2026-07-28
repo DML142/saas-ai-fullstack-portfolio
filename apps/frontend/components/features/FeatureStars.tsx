@@ -20,8 +20,6 @@ function Cmd({ children }: { children: string }) {
   );
 }
 
-/** Points at a route that doesn't exist yet — same pattern as the navbar's
- * links, which already reach for /dashboard ahead of it being built. */
 function FeatureLink({
   href,
   children,
@@ -41,11 +39,8 @@ function FeatureLink({
 
 type Feature = {
   id: string;
-  /** Horizontal offset for this row, shifting the star and its text together.
-   * Varied per-row with different magnitudes (not a strict left/right
-   * alternation) so the chain reads as organically zigzagging rather than
-   * mechanically bouncing between two fixed lanes. Omitted = the base
-   * pillar position. */
+  /** Per-row horizontal offset (star + text together) so the chain zigzags.
+   * Omitted = the base pillar position. */
   indentClass?: string;
   title: string;
   body: ReactNode;
@@ -88,11 +83,8 @@ const FEATURES: Feature[] = [
   },
   {
     id: 'import-export',
-    // Pulled back in from an earlier, larger shift: at the bigger offset the
-    // incoming line from `workspace` (which sits at the base position, no
-    // offset of its own) ran close enough to this row's title to visually
-    // overlap it. A smaller rightward shift keeps some variation from `cli`'s
-    // offset while giving the line more clearance before it reaches the star.
+    // Small rightward shift — a larger one let the incoming line from
+    // `workspace` overlap this row's title.
     indentClass: 'pl-8 md:pl-[64px]',
     title: 'Import / export',
     body: (
@@ -104,15 +96,8 @@ const FEATURES: Feature[] = [
   },
 ];
 
-/**
- * A single chain, one star to the next: 1→2→3→4. No star reaches more than one
- * other, so the path never forks and there is only ever one line to follow.
- *
- * Stars 2 and 4 each step out to their own horizontal offset (star 3 sits back
- * on the base pillar), so the chain zigzags rather than running dead straight
- * — that keeps the skill-tree/git-graph read the design asked for without a
- * branch.
- */
+/** A single chain, one star to the next (1→2→3→4) — never forks, so there's
+ * only ever one line to follow. */
 const EDGES: [string, string][] = [
   ['fast-init', 'cli'],
   ['cli', 'workspace'],
@@ -122,17 +107,14 @@ const EDGES: [string, string][] = [
 const STAR_CORE_R = 3.2;
 const STAR_BLOOM_R = 16;
 const STAR_SPIKE_R = 19;
-/** Box the star mark sits in. Its height is matched to the title's
- * line-height (leading-9 / md:leading-10) so the star centres on the first
- * line of the title without any measuring or magic offsets. */
+/** Box the star mark sits in. Height matches the title's line-height so the
+ * star centres on the title's first line without measuring. */
 const STAR_BOX = 44;
 /** Keeps an edge clear of the bloom at both ends instead of spearing it. */
 const EDGE_TRIM = 15;
 
-// Relative beats on the reveal timeline. The stars sit at roughly even
-// intervals down the pillar, so weighting each beat equally makes timeline
-// progress track scroll position closely enough that a star ignites about when
-// it reaches the middle of the viewport.
+// Relative beats on the reveal timeline. Weighting each equally makes timeline
+// progress track scroll position, so a star ignites near mid-viewport.
 const STAR_BEAT = 0.5;
 const LINE_BEAT = 1;
 
@@ -149,12 +131,10 @@ export function FeatureStars() {
       const container = containerRef.current;
       if (!container) return;
 
-      /** Edge geometry is measured, not laid out on a fixed grid: the rows are
-       * flowing text whose height depends on copy, font loading and wrap
-       * width, so there is no honest way to know where a star lands without
-       * asking the DOM. Returns the trimmed endpoints in container-relative
-       * pixels — the overlay SVG has no viewBox, so its user units are CSS px
-       * and these drop straight in. */
+      /** Edge geometry is measured from the DOM, since row heights depend on
+       * copy, font loading and wrap width. Returns trimmed endpoints in
+       * container-relative pixels (the overlay SVG has no viewBox, so its
+       * user units are CSS px). */
       const geometry = (edgeIndex: number) => {
         const cRect = container.getBoundingClientRect();
         const [fromId, toId] = EDGES[edgeIndex];
@@ -199,8 +179,8 @@ export function FeatureStars() {
 
       measure();
 
-      // Rows reflow on font load and on any width change, and neither is a
-      // window resize — so ScrollTrigger's own refresh wouldn't catch them.
+      // Rows reflow on font load and width changes, which ScrollTrigger's own
+      // refresh wouldn't catch.
       const ro = new ResizeObserver(() => {
         measure();
         ScrollTrigger.refresh();
@@ -209,16 +189,12 @@ export function FeatureStars() {
 
       if (reducedMotion) return () => ro.disconnect();
 
-      // One scrubbed timeline for the whole pillar, rather than a trigger per
-      // element. Independent triggers overlap whenever two rows are close
-      // together, which is exactly what must not happen here: each line has to
-      // finish drawing before the next one starts. Appending the tweens to a
-      // single timeline makes that ordering structural instead of something
-      // that merely tends to hold at some viewport heights.
+      // One scrubbed timeline for the whole pillar, not a trigger per element:
+      // appending tweens to a single timeline makes the ordering (each line
+      // finishes drawing before the next starts) structural.
       //
-      // Everything is authored in its final state and only hidden here, inside
-      // a layout effect before paint — so no-JS, or any failure to reach this
-      // code, leaves the pillar complete and readable rather than blank.
+      // Everything is authored in its final state and only hidden here, before
+      // paint — so no-JS leaves the pillar complete rather than blank.
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: container,
@@ -244,9 +220,8 @@ export function FeatureStars() {
         const edge = EDGES.findIndex(([fromId]) => fromId === f.id);
         const line = edge === -1 ? null : lineRefs.current[edge];
         if (line) {
-          // Function-based values + invalidateOnRefresh: the dash length comes
-          // from measured geometry, so it must be re-read whenever the rows
-          // reflow rather than baked in once at creation.
+          // Function-based values + invalidateOnRefresh: the dash length is
+          // re-read from measured geometry whenever the rows reflow.
           tl.fromTo(
             line,
             {
@@ -264,15 +239,14 @@ export function FeatureStars() {
   );
 
   return (
-    // flex+gap rather than space-y: the overlay <svg> below is the first child,
-    // and space-y's sibling selector would hang a margin off the first <li>.
-    // Out-of-flow children don't participate in gap, so this spaces only the rows.
+    // flex+gap, not space-y: the overlay <svg> is the first child, and gap
+    // skips out-of-flow children so only the rows get spaced.
     <ol
       ref={containerRef}
       className="relative flex w-full max-w-3xl flex-col gap-16 md:gap-24"
     >
-      {/* No viewBox: the overlay matches the container's box exactly, so its
-          user units are CSS pixels and measured coordinates need no mapping. */}
+      {/* No viewBox: the overlay matches the container's box, so its user
+          units are CSS pixels and measured coordinates drop straight in. */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
         aria-hidden
@@ -294,8 +268,7 @@ export function FeatureStars() {
       {FEATURES.map((f, i) => (
         <li
           key={f.id}
-          // Perspective per row, so each feature warps around its own centre
-          // rather than sharing one vanishing point down the whole column.
+          // Perspective per row, so each feature warps around its own centre.
           className={cn('relative perspective-[1000px]', f.indentClass)}
         >
           <div className="flex items-start gap-4">
@@ -303,9 +276,8 @@ export function FeatureStars() {
               ref={(el) => {
                 starRefs.current[i] = el;
               }}
-              // Deliberately outside the warped block: edges terminate here, and
-              // a mark that stayed square to the viewer is easier to aim at
-              // than one tilted in 3D.
+              // Outside the warped block: edges terminate here, and a mark
+              // square to the viewer is easier to aim at than one tilted in 3D.
               className="flex h-9 shrink-0 items-center justify-center md:h-10"
               style={{ width: STAR_BOX }}
             >
@@ -324,11 +296,9 @@ export function FeatureStars() {
               </svg>
             </span>
 
-            {/* The fake-3D warp: one tilt across title and copy together, so
-                the whole block reads as a single plane turned in space. Origin
-                on the left edge keeps it anchored to the star while the far
-                edge recedes. Dropped below md, where a narrow column has no
-                width to spare on foreshortening. */}
+            {/* Fake-3D warp: one tilt across title and copy so the block reads
+                as a single plane turned in space, anchored to the star at its
+                left edge. Dropped below md, where the column is too narrow. */}
             <div className="min-w-0 flex-1 md:transform-[rotateY(-7deg)] md:origin-[left_center]">
               <h3 className="font-display text-2xl leading-9 text-ink md:text-3xl md:leading-10">
                 {f.title}

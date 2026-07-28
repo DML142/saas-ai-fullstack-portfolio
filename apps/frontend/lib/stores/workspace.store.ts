@@ -21,8 +21,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     set((s) => ({
       workspaces,
       status: 'loaded',
-      // Keep the current selection if it's still valid; otherwise default to
-      // the first workspace (or null, if the user genuinely has none yet).
+      // Keep the current selection if still valid, else the first workspace
+      // (or null if there are none).
       activeId:
         s.activeId && workspaces.some((w) => w.id === s.activeId)
           ? s.activeId

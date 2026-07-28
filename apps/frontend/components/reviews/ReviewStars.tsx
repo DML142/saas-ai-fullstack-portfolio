@@ -11,14 +11,9 @@ gsap.registerPlugin(useGSAP);
 const HOLD_MS = 5200;
 const FADE_S = 0.7;
 
-/** Lit vs. resting appearance of a star. The resting star is dimmed, never
- * hidden — a review that has already had its turn stays visibly present in the
- * scatter, waiting to come round again.
- *
- * Resting can't go much below this: the ambient star field sits behind these,
- * and a review star dimmed too far stops reading as "a review waiting its turn"
- * and starts reading as background noise. It has to stay unmistakably foreground
- * while still losing clearly to the lit one. */
+/** Lit vs. resting appearance of a star. Resting is dimmed, never hidden — but
+ * not so dim it reads as the ambient field behind it rather than a review
+ * waiting its turn. */
 const LIT = { scale: 1, autoAlpha: 1 };
 const RESTING = { scale: 0.6, autoAlpha: 0.5 };
 
@@ -39,14 +34,8 @@ type Review = {
   y: number;
 };
 
-/**
- * Five reviews, five stars.
- *
- * Positions are irregular on BOTH axes on purpose. Five stars evenly spaced on
- * one line above a testimonial reads unmistakably as a five-star *rating*,
- * which is a claim this section isn't making — the scatter has to look like
- * sky, not like a score.
- */
+/** Five reviews, five stars. Positions are irregular on both axes so the
+ * scatter reads as sky, not as a five-star rating. */
 const REVIEWS: Review[] = [
   {
     id: 'jae',
@@ -95,9 +84,8 @@ const REVIEWS: Review[] = [
   },
 ];
 
-/** Initials in a circle — never a photograph. A fabricated face attached to a
- * fabricated quote is its own deceptive pattern, independent of the name being
- * generic, so there is no photorealistic path here to fall into by accident. */
+/** Initials in a circle — never a photograph, since a fabricated face on a
+ * fabricated quote would be its own deceptive pattern. */
 function Avatar({ name }: { name: string }) {
   const initials = name
     .split(' ')
@@ -172,10 +160,8 @@ export function ReviewStars() {
         const star = starRefs.current[i];
         if (!star) return;
         const target = i === index ? LIT : RESTING;
-        // Glow-transfer, not a slide: the outgoing star eases down to resting
-        // while the incoming one blooms up. Nothing translates, nothing leaves
-        // the stage — the same `scale`+`autoAlpha` shape FeatureStars uses for
-        // its scroll reveal, just run in both directions.
+        // Glow-transfer, not a slide: the outgoing star eases to resting while
+        // the incoming one blooms up. Nothing translates or leaves the stage.
         if (prev === index) {
           gsap.set(star, target);
         } else {
@@ -197,10 +183,8 @@ export function ReviewStars() {
     { dependencies: [index, reducedMotion], scope: scopeRef },
   );
 
-  // Reduced motion gets a genuinely different layout, not a frozen frame of the
-  // cycling one. Freezing would leave four of five reviews hidden behind a
-  // mechanism that no longer runs — the opposite of the point. A plain stacked
-  // list shows every review at once, all stars lit.
+  // Reduced motion gets a different layout, not a frozen frame: a plain
+  // stacked list showing every review at once, all stars lit.
   if (reducedMotion) {
     return (
       <ul className="flex w-full max-w-2xl flex-col gap-10">
@@ -220,17 +204,13 @@ export function ReviewStars() {
 
   return (
     <div ref={scopeRef} className="relative w-full max-w-3xl">
-      {/* Scatter band. Stars live in the upper region; the quote sits below
-          them, so the quote's position never moves as the active star changes —
-          a testimonial that jumps around the stage every few seconds is a
-          testimonial nobody finishes reading. */}
+      {/* Scatter band. Stars sit in the upper region and the quote below them,
+          so the quote never moves as the active star changes. */}
       <div className="relative h-28 md:h-32">
         {REVIEWS.map((review, i) => (
-          // Two spans on purpose. The outer one owns the centring transform
-          // (`-translate-*`) and never animates; the inner one is GSAP's target.
-          // Collapsed into one element, GSAP would take ownership of `transform`
-          // and its `scale` writes would fight the `-50%` centring — the same
-          // split InitConstellation uses for its parallax groups.
+          // Two spans: the outer owns the centring transform (never animates),
+          // the inner is GSAP's target. Collapsed into one, GSAP's `scale`
+          // writes to `transform` would fight the `-50%` centring.
           <span
             key={review.id}
             className="absolute -translate-x-1/2 -translate-y-1/2"
@@ -241,8 +221,8 @@ export function ReviewStars() {
                 starRefs.current[i] = el;
               }}
               className="block"
-              // Authored at rest, so a failure to reach the GSAP effect leaves
-              // the scatter visible rather than blank.
+              // Authored at rest, so the scatter is visible even if the GSAP
+              // effect never runs.
               style={{
                 transform: `scale(${i === 0 ? LIT.scale : RESTING.scale})`,
                 opacity: i === 0 ? LIT.autoAlpha : RESTING.autoAlpha,

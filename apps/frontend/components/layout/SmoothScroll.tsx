@@ -15,24 +15,15 @@ const SMOOTH_SECONDS = 1.2;
 /**
  * Page-wide smooth scrolling via GSAP's ScrollSmoother.
  *
- * ScrollSmoother keeps the *native* scrollbar as the source of truth — it sets
- * the body's height to the content height and then translates the content to
- * catch up. Two things follow from that, and both matter here:
+ * ScrollSmoother keeps the native scrollbar as the source of truth, so
+ * `window.scrollY`/`scroll` (the navbar's `useScrolled`) and ScrollTrigger
+ * both keep working untouched. Anything `position: fixed` must stay OUTSIDE
+ * the wrapper or it rides the content transform — the navbar is a sibling in
+ * the root layout for that reason.
  *
- *  - `window.scrollY` and the `scroll` event still behave normally, so
- *    `useScrolled` (the navbar's transition) keeps working untouched.
- *  - ScrollTrigger integrates with it natively, so the feature-star reveals and
- *    the ambient parallax need no changes.
- *
- * Anything `position: fixed` must stay OUTSIDE the wrapper — inside, it would
- * ride the content's transform and scroll away. The navbar is rendered as a
- * sibling in the root layout for exactly that reason.
- *
- * No CSS is authored for #smooth-wrapper / #smooth-content on purpose:
- * ScrollSmoother applies what it needs at create time, inside a layout effect
- * before paint. Authoring it in globals.css would strand the reduced-motion
- * path — where no smoother is created — with a fixed, overflow-hidden wrapper
- * and no way to scroll.
+ * No CSS is authored for #smooth-wrapper / #smooth-content: ScrollSmoother
+ * applies what it needs at create time. Authoring it in globals.css would
+ * strand the reduced-motion path (no smoother) with an unscrollable wrapper.
  */
 export function SmoothScroll({ children }: { children: ReactNode }) {
   const reducedMotion = useReducedMotion();
@@ -44,9 +35,8 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
         wrapper: '#smooth-wrapper',
         content: '#smooth-content',
         smooth: SMOOTH_SECONDS,
-        // `effects` would scan the DOM for data-speed/data-lag attributes on
-        // every refresh. Nothing uses them — the parallax we do have is a
-        // plain ScrollTrigger inside AmbientStarField — so leave it off.
+        // `effects` scans the DOM for data-speed/data-lag attributes on every
+        // refresh; nothing uses them (the parallax is a plain ScrollTrigger).
         effects: false,
       });
       return () => smoother.kill();

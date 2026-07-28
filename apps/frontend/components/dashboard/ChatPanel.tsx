@@ -10,11 +10,9 @@ import { MessageBubble } from './MessageBubble';
 import { useEffect, useRef, useState } from 'react';
 import { getMessages, sendMessage, type ChatMessage } from '@/lib/stores/chat';
 
-// One shared reference for the "no messages" case. Returning a fresh `[]` from
-// the derivation below on every render would give `messages` a new identity
-// each time, making it an unstable dependency for the auto-scroll effect (and
-// tripping react-hooks/exhaustive-deps). A stable constant fixes that without
-// a useMemo, since the non-empty case is already a stable Zustand reference.
+// One shared reference for the "no messages" case, so `messages` stays a
+// stable dependency for the auto-scroll effect (a fresh `[]` each render
+// wouldn't). The non-empty case is already a stable Zustand reference.
 const EMPTY: ChatMessage[] = [];
 
 export function ChatPanel() {
@@ -22,29 +20,21 @@ export function ChatPanel() {
   const activeId = useWorkspaceStore((s) => s.activeId);
   const status = useWorkspaceStore((s) => s.status);
   const active = workspaces.find((ws) => ws.id === activeId);
-  // A user message is sent but the simulated reply hasn't arrived over the
-  // socket yet — used to lock the input until the "assistant" answers.
+  // A user message is sent but the simulated reply hasn't arrived yet — locks
+  // the input until the "assistant" answers.
   const pending = useMessageStore((s) => s.pending);
   const isPending = activeId ? pending.has(activeId) : false;
-  // Whatever's already in the store for this workspace — pushed live via the
-  // socket (section 6). Loading the full history on selection is section 8's
-  // job; this just renders what's already there.
-  //
-  // Select the raw `byWorkspace` slice — a stable reference that only
-  // changes when the store actually updates — and derive `messages` from it
-  // here in the render body, not inside the selector. A selector that builds
-  // a *new* `[]` on every call (e.g. `s.byWorkspace[id] ?? []`) breaks
-  // useSyncExternalStore's snapshot-stability contract, since "empty" then
-  // never compares equal to itself across renders — that's what triggers
-  // React's "getSnapshot should be cached" infinite-loop warning.
+  // Select the stable `byWorkspace` slice and derive `messages` in the render
+  // body, not the selector — a selector returning a fresh `[]` each call would
+  // break useSyncExternalStore's snapshot stability (the "getSnapshot should
+  // be cached" warning).
   const byWorkspace = useMessageStore((s) => s.byWorkspace);
   const messages = activeId ? (byWorkspace[activeId] ?? EMPTY) : EMPTY;
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
 
-  // Keep the newest message in view — on send, on socket reply, and while the
-  // "typing…" indicator is showing.
+  // Keep the newest message in view — on send, on reply, and while "typing…".
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = scrollRef.current;
@@ -80,15 +70,12 @@ export function ChatPanel() {
       useMessageStore.getState().addMessage(message);
       setInput('');
     } catch {
-      // make it
     } finally {
       setSending(false);
     }
   }
 
-  // Loading and "loaded but nothing selected" are different situations, not
-  // the same empty state: the first is "hang on," the second is "there's
-  // genuinely nothing here yet" (no workspaces, or none created).
+  // Loading and "loaded but nothing selected" are different empty states.
   const emptyMessage =
     status === 'loading'
       ? 'Loading your workspaces…'
@@ -99,8 +86,8 @@ export function ChatPanel() {
           : 'Send message to start chatting.';
 
   return (
-    // h-full + overflow-hidden bounds the panel to the (screen-height) layout
-    // so only the messages region scrolls — header and composer stay put.
+    // h-full + overflow-hidden bounds the panel so only the messages region
+    // scrolls; header and composer stay put.
     <div className="flex h-full flex-col overflow-hidden">
       <DashboardHeader title={active?.name ?? ''} />
 

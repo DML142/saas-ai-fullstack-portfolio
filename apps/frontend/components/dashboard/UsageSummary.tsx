@@ -1,8 +1,5 @@
-/** Illustrative only — there's no billing/usage-tracking backend yet. Numbers
- * are static, and "Lite" mirrors the Pricing section's tier vocabulary
- * (components/pricing/PricingSection.tsx's PLANS) rather than inventing a
- * new name — but the values themselves are not derived from that data, so
- * nothing here should be imported/coupled to the marketing section. */
+/** Illustrative only — no billing/usage backend yet. Numbers are static;
+ * "Lite" just mirrors the Pricing tier names, not coupled to that data. */
 const TIER_NAME = 'Lite';
 
 const USAGE = [

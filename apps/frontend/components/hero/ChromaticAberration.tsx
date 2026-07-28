@@ -3,26 +3,19 @@
 import { useId, type ReactNode } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-/** px per channel — subtle, constant, not interaction-driven. The hero's big
- * display type carries this happily; smaller UI text needs less, so callers can
- * dial it down. Defaulted rather than required so the hero's established look
- * is unchanged by this becoming configurable. */
+/** px per channel — subtle, constant, not interaction-driven. Callers can dial
+ * it down for smaller text; defaulted so the hero's look is unchanged. */
 const DEFAULT_OFFSET = 1.4;
 
 /**
- * Wraps its children in a subtle, constant RGB channel-split effect,
- * implemented as a single SVG <filter> applied via CSS `filter: url(...)`.
- * Scoped to just this subtree (not body/:root) so the browser only has to
- * re-rasterize the wrapped content, not the whole page — the actual reason
- * this is cheap enough to leave running constantly, unlike a naive
- * whole-page WebGL post-process.
+ * Wraps its children in a subtle, constant RGB channel-split, as one SVG
+ * <filter> applied via CSS `filter: url(...)`. Scoped to this subtree (not the
+ * whole page) so only the wrapped content re-rasterizes — cheap enough to run
+ * constantly.
  *
- * The filter id comes from `useId()` rather than a module constant: this is
- * mounted more than once per page now (hero + pricing), and a hardcoded id
- * would put duplicate ids in the document — invalid, and it leaves which
- * filter `url(#…)` actually resolves to up to the browser. Deriving it per
- * instance keeps every usage collision-free without callers having to pass
- * (and remember to vary) an id prop.
+ * The filter id comes from `useId()`, not a module constant: this mounts more
+ * than once per page (hero + pricing), and a hardcoded id would duplicate ids
+ * and leave `url(#…)` resolution up to the browser.
  */
 export function ChromaticAberration({
   children,
@@ -32,8 +25,7 @@ export function ChromaticAberration({
   offset?: number;
 }) {
   const reducedMotion = useReducedMotion();
-  // useId() emits colons, which are valid in an id attribute but need escaping
-  // inside a url(#…) reference — strip them instead of fighting the escaping.
+  // useId() emits colons, which need escaping inside url(#…) — strip them.
   const filterId = `chromatic-aberration-${useId().replace(/:/g, '')}`;
 
   return (

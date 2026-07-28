@@ -27,24 +27,12 @@ export type Plan = {
 };
 
 /** Ultra's name only: a cosmic-light-to-white gradient that sweeps
- * continuously. `background-clip: text` + transparent fill lets the gradient
- * paint the glyphs; animating `backgroundPositionX` moves that paint across
- * them.
+ * continuously via `background-clip: text` + animated `backgroundPositionX`.
  *
- * The gradient's start and end stops are the *same* color, and the tile is
- * sized to exactly the text's own measured width — the same trick
- * `IntegrationsMarquee` uses for its seamless loop (there: two identical
- * copies, shift by exactly one copy's width; here: one repeating gradient
- * tile, shift by exactly one tile's width), just applied to
- * `background-position` instead of `translateX`. The first version scrolled a
- * single 220%-wide gradient from 0% to 200% and then snapped back — visible,
- * because position 0 and position 200% are genuinely different-looking
- * states. With matching end colors and an exact-width tile, position 0 and
- * position "one tile width" render identically, so the loop reset is
- * invisible.
- *
- * Reduced motion needs no separate branch — skipping the tween just leaves
- * the authored `0px` position in place, a static (but still gradient) title. */
+ * The gradient's end stops are the same color and the tile is sized to the
+ * text's measured width, so shifting by exactly one tile width loops
+ * seamlessly (the same trick `IntegrationsMarquee` uses). Reduced motion
+ * just skips the tween, leaving a static gradient title. */
 function UltraTitle({ name }: { name: string }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const reducedMotion = useReducedMotion();
@@ -53,11 +41,9 @@ function UltraTitle({ name }: { name: string }) {
   useEffect(() => {
     const el = textRef.current;
     if (!el) return;
-    // Percentage-based background-position can't be trusted to land on an
-    // exact one-tile shift (its formula scales by `container - image size`,
-    // not by the image size alone), so this measures the real pixel width and
-    // drives the tween in pixels instead — deterministic, no formula to get
-    // subtly wrong.
+    // Measure the real pixel width and drive the tween in pixels: percentage
+    // background-position scales by `container - image size`, so it can't be
+    // trusted to land on an exact one-tile shift.
     const measure = () => {
       const w = el.getBoundingClientRect().width;
       if (w > 0) setTileWidth(Math.round(w));
@@ -93,16 +79,11 @@ function UltraTitle({ name }: { name: string }) {
         ref={textRef}
         className="font-display bg-clip-text text-2xl text-transparent"
         style={{
-          // Same color at both ends (cosmic-light, not the darker cosmic) —
-          // that match is what makes the tile repeat seamlessly, and it's
-          // also the "lighter" fix: the old version anchored one end on the
-          // darker `--color-cosmic` token.
+          // Same color at both ends, so the tile repeats seamlessly.
           backgroundImage:
             'linear-gradient(90deg, var(--color-cosmic-light) 0%, #ffffff 50%, var(--color-cosmic-light) 100%)',
-          // One tile exactly as wide as the text itself, tiled by the browser
-          // via the default `repeat` — this, plus matching end colors, is
-          // what the pixel-measured animation above relies on for a seamless
-          // loop.
+          // One tile exactly as wide as the text, tiled by the default
+          // `repeat` — what the pixel-measured animation loops against.
           backgroundSize: tileWidth ? `${tileWidth}px 100%` : '100% 100%',
           backgroundPositionX: '0px',
         }}
@@ -142,21 +123,16 @@ export function PlanCard({ plan }: { plan: Plan }) {
         <PlanStar star={star} />
       </div>
 
-      {/* flex-1 is load-bearing: the <li> stretches to the tallest card via the
-          grid's items-stretch, but without this the wrapper would size to its
-          own content and the card body's h-full would resolve against nothing —
-          leaving each card a different height and the CTAs unaligned. */}
+      {/* flex-1 is load-bearing: it stretches the wrapper to the tallest card
+          (via the grid's items-stretch) so every card matches height and the
+          CTAs align. */}
       <div className="relative flex w-full flex-1">
         {/* Layer 0 — the glow, behind everything. Ultra only. */}
         {featured && <UltraGlow />}
 
-        {/* Layer 1 — the glass ring. Translucent and blurred, so the glow
-            behind it bleeds through. Only its rim is ever visible, because the
-            opaque body below covers the middle; that rim is the whole point.
-            The `supports-[backdrop-filter]:` guard this originally carried
-            silently generated nothing, leaving the ring with no blur at all —
-            plain `backdrop-blur-md` is used instead, which Tailwind already
-            emits with the right prefixes and every target browser supports. */}
+        {/* Layer 1 — the glass ring. Translucent and blurred so the glow
+            behind it bleeds through; only its rim shows, since the opaque body
+            below covers the middle. */}
         <div
           className={cn(
             'pointer-events-none absolute inset-0 z-10 rounded-3xl',
@@ -173,16 +149,11 @@ export function PlanCard({ plan }: { plan: Plan }) {
           className={cn(
             'relative z-20 flex w-full flex-col rounded-3xl bg-card p-8',
             featured && [
-              // The inset IS the visible glass rim's width — widened from 2px
-              // so there's enough of it to actually read as frosted glass
-              // rather than a hairline.
+              // The inset IS the visible glass rim's width — wide enough to
+              // read as frosted glass rather than a hairline.
               'm-[5px] rounded-[calc(1.5rem-5px)]',
-              // A little extra breathing room, on top of the wider grid track
-              // — real padding, not a transform. Because every card's height
-              // is already unified (see the flex-1 note above), this also
-              // pulls Lite and Pro slightly taller to match, the same way
-              // Pro's longer feature list already set the row's height before
-              // this change.
+              // Extra padding (real padding, not a transform) on top of the
+              // wider grid track.
               'md:p-9',
             ],
           )}

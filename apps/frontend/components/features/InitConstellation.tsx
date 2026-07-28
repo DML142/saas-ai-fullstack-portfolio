@@ -37,21 +37,12 @@ type StarDef = {
 };
 
 /**
- * The Big Dipper — the seven bright stars of Ursa Major, and conveniently
- * exactly as many stars as there are nodes to place.
+ * The Big Dipper — seven bright stars of Ursa Major, one per node.
  *
- * Unlike a radial figure, the Dipper is a chain: a closed four-star bowl with
- * a three-star handle trailing off it. It has no true centre, so `cos init`
- * takes Megrez, the star where the handle meets the bowl — the only one of
- * the seven with three connections. Every star still reaches it, though
- * Alkaid is three hops out at the tip of the handle.
- *
- * Coordinates, magnitudes and distances are the real catalogue values.
- *
- * Tool→star assignment is not arbitrary: the short labels go on Alioth and
- * Mizar, mid-handle, where neighbouring stars crowd in from both sides, and
- * the longest label goes to Alkaid at the tip, where it has open space to
- * reach into.
+ * `cos init` takes Megrez, where the bowl meets the handle — the only star
+ * with three connections. Coordinates, magnitudes and distances are real
+ * catalogue values. Short labels go mid-handle (Alioth, Mizar) where stars
+ * crowd in; the longest goes to Alkaid at the tip, where there's open space.
  */
 const BIG_DIPPER: StarDef[] = [
   {
@@ -129,11 +120,8 @@ const BIG_DIPPER: StarDef[] = [
   },
 ];
 
-/**
- * The real Big Dipper figure: Dubhe→Merak→Phecda→Megrez closes the bowl, then
- * Megrez→Alioth→Mizar→Alkaid runs out along the handle. The bowl is a genuine
- * cycle rather than a tree — that's the actual shape, not a simplification.
- */
+/** The Big Dipper figure: the bowl (Dubhe→Merak→Phecda→Megrez) is a closed
+ * cycle, then Megrez→Alioth→Mizar→Alkaid runs out along the handle. */
 const EDGES: [string, string][] = [
   ['dubhe', 'merak'],
   ['merak', 'phecda'],
@@ -147,19 +135,14 @@ const EDGES: [string, string][] = [
 const HUB = BIG_DIPPER[0];
 const DEC_COS = Math.cos((HUB.dec * Math.PI) / 180);
 
-/**
- * No rotation needed. Straight out of the catalogue with north up and west
- * to the right, the Dipper already lies wider than it is tall — bowl to the
- * right, handle sweeping down and away to the left — which is both its
- * natural orientation in the sky and a good fit for a wide stage. The knob
- * stays because a constellation's rotation depends on the hour you look.
- */
+/** No rotation needed: with north up and west right, the Dipper already lies
+ * wider than tall, a good fit for a wide stage. Kept as a knob since a
+ * constellation's rotation depends on the hour you look. */
 const ROTATION_DEG = 0;
 
-/** Flat projection centred on the hub star. RA runs eastward — leftward on a
- * sky chart — hence the negation; scaling it by cos(dec) corrects meridian
- * convergence so the figure keeps its true proportions instead of smearing
- * sideways. SVG's y axis points down, so declination is negated too. */
+/** Flat projection centred on the hub star. RA is negated (it runs leftward on
+ * a sky chart) and scaled by cos(dec) to correct meridian convergence; dec is
+ * negated because SVG's y axis points down. */
 function project(s: StarDef) {
   const x0 = -(s.ra - HUB.ra) * 15 * DEC_COS;
   const y0 = -(s.dec - HUB.dec);
@@ -178,9 +161,8 @@ type Stage = {
   height: number;
   cx: number;
   cy: number;
-  /** Box the star figure is fitted inside; labels live in the margin around
-   * it. Fitted on a single uniform scale, never stretched — a stretched
-   * constellation is no longer that constellation. */
+  /** Box the star figure is fitted inside (labels live in the margin around
+   * it). Fitted on a single uniform scale, never stretched. */
   figureW: number;
   figureH: number;
   labelFontSize: number;
@@ -190,8 +172,7 @@ type Stage = {
   mobile?: boolean;
 };
 
-// cy sits below the stage's vertical middle on both stages, so the figure
-// hangs low under the heading rather than floating dead-centre.
+// cy sits below the vertical middle so the figure hangs low under the heading.
 const DESKTOP_STAGE: Stage = {
   width: 1000,
   height: 500,
@@ -210,9 +191,8 @@ const MOBILE_STAGE: Stage = {
   height: 500,
   cx: 190,
   cy: 285,
-  // Figure deliberately narrower than the stage: the leftover width is what
-  // the labels live in. Shrinking the constellation to buy label room is the
-  // right trade at 375px — an unreadable label helps nobody.
+  // Narrower than the stage: the leftover width holds the labels, worth
+  // shrinking the constellation for at 375px.
   figureW: 250,
   figureH: 240,
   labelFontSize: 13,
@@ -237,9 +217,8 @@ const LABEL_DIRS: Record<
   down: { dx: 0, dy: 1, anchor: 'middle', baseline: 'hanging' },
   left: { dx: -1, dy: 0, anchor: 'end', baseline: 'middle' },
   right: { dx: 1, dy: 0, anchor: 'start', baseline: 'middle' },
-  // The hub has edges leaving toward the bowl (up-right and down-right) and
-  // the handle (down-left), so the upper left is the one quadrant its label
-  // can occupy without crossing a line.
+  // The hub's edges leave toward the bowl and handle, so the upper left is the
+  // one quadrant its label can occupy without crossing a line.
   'up-right': { dx: 0.78, dy: -0.78, anchor: 'start', baseline: 'auto' },
   'up-left': { dx: -0.78, dy: -0.78, anchor: 'end', baseline: 'auto' },
 };
@@ -263,10 +242,8 @@ function buildLayout(stage: Stage) {
 
   return BIG_DIPPER.map((def, i) => {
     const brightness = (MAG_MAX - def.mag) / (MAG_MAX - MAG_MIN);
-    // The hub is sized by fiat rather than by magnitude. This is a bigger
-    // departure than it looks: Megrez is famously the *faintest* of the seven
-    // (mag 3.31), yet it has to read as the anchor here. The other six keep
-    // their true magnitude ordering.
+    // The hub is sized by fiat, not magnitude — Megrez is the faintest of the
+    // seven but has to read as the anchor. The other six keep true magnitudes.
     const coreR = round(
       (def.hub ? 5 : 1.5 + brightness * 2.3) * stage.starScale,
     );
@@ -314,10 +291,8 @@ export function InitConstellation() {
       const svg = scopeRef.current;
       if (!svg) return;
 
-      // The stars themselves are fixed — no parallax, no drift. The only
-      // motion left is a slow breathe across the edges, so the wiring reads
-      // as live rather than printed, while the constellation itself stays
-      // exactly where the catalogue puts it.
+      // Stars stay fixed; only the edges slowly breathe, so the wiring reads
+      // as live while the constellation stays where the catalogue puts it.
       const lines = svg.querySelectorAll<SVGLineElement>('[data-edge]');
       gsap.to(lines, {
         opacity: 0.5,

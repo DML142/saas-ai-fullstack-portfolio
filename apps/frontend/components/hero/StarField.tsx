@@ -51,12 +51,9 @@ export function StarField() {
       const container = containerRef.current;
       if (!container || !contextSafe) return;
 
-      // `spawn` recurses via GSAP's onComplete/delayedCall callbacks, which
-      // fire *after* this effect's synchronous run — animations created
-      // inside those callbacks aren't automatically tracked by useGSAP's
-      // cleanup context. Wrapping with contextSafe re-registers each new
-      // animation as it's created, so unmounting (or `reducedMotion`
-      // changing) still reverts every in-flight star, not just the first.
+      // `spawn` recurses via onComplete/delayedCall callbacks that fire after
+      // this effect runs, so their animations aren't auto-tracked by useGSAP.
+      // contextSafe re-registers each one so cleanup reverts every in-flight star.
       const spawn = contextSafe((star: HTMLDivElement) => {
         const { size, duration, color } = randomStarProps();
         const top = randomBetween(0, 100);
@@ -87,11 +84,8 @@ export function StarField() {
         });
       });
 
-      // On first mount, place every star already mid-journey across the
-      // field (instead of queued off-screen right, waiting to spawn) so the
-      // sky looks populated the instant the page loads, not empty-then-
-      // filling-in. Each star still moves at the speed its size implies —
-      // it just starts partway through that journey instead of at the start.
+      // On first mount, place every star already mid-journey so the sky looks
+      // populated immediately instead of filling in from the right edge.
       const populateInitial = contextSafe((star: HTMLDivElement) => {
         const { size, duration, color } = randomStarProps();
         const top = randomBetween(0, 100);

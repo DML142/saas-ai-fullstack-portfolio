@@ -1,14 +1,10 @@
 /**
- * Star rendering shared by both parts of the features section.
+ * Star rendering shared across the features section.
  *
- * The gradients live in one hidden sprite rather than in each SVG that uses
- * them, because `url(#id)` resolves against the whole document — duplicating
- * the defs per component would mean duplicate IDs on the page, which is
- * invalid and leaves which gradient wins up to the browser.
- *
- * The trade-off is a real coupling: anything rendering <StarMark> needs
- * <StarGradientDefs> mounted somewhere on the page. FeaturesSection mounts it
- * once, above both parts.
+ * The gradients live in one hidden sprite, not per-SVG: `url(#id)` resolves
+ * document-wide, so duplicating the defs would mean invalid duplicate IDs.
+ * The trade-off is that anything rendering <StarMark> needs <StarGradientDefs>
+ * mounted on the page — FeaturesSection mounts it once.
  */
 
 const BLOOM_ID = 'cos-star-bloom';
@@ -16,9 +12,8 @@ const SPIKE_ID = 'cos-star-spike';
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
-/** A four-pointed sparkle: straight spikes pinched to a narrow waist at the
- * centre. This is what sells "star" over "dot" — bright points in a real
- * exposure flare along axes rather than fading as a perfect disc. */
+/** A four-pointed sparkle: straight spikes pinched to a narrow waist — what
+ * sells "star" over "dot". */
 export function spikePath(r: number) {
   const k = round(r * 0.075);
   const R = round(r);
@@ -37,10 +32,9 @@ export function StarGradientDefs() {
       focusable="false"
     >
       <defs>
-        {/* Bloom without a filter. An feGaussianBlur would cost a full
-            re-rasterisation per star; a radial gradient is plain paint, and it
-            gives the white-hot core falling off through cosmic purple that a
-            blur can't do in one pass anyway. */}
+        {/* Bloom as a radial gradient, not an feGaussianBlur — plain paint
+            with no per-star re-rasterisation, and it gives the white-hot core
+            falling off through cosmic purple. */}
         <radialGradient id={BLOOM_ID}>
           <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
           <stop

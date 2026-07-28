@@ -8,14 +8,12 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 type State = 'idle' | 'sending' | 'sent' | 'error';
 
 /**
- * Soft gate for unverified accounts: the app stays fully usable (login is not
- * blocked on verification), but a persistent bar nudges the user to verify and
- * lets them re-request the email.
+ * Soft gate for unverified accounts: the app stays usable, but a persistent
+ * bar nudges the user to verify and lets them re-request the email.
  *
- * Reads `emailVerified` straight from the auth store rather than `useAuth()`,
- * which projects the user down to { name, role } and drops the flag. The bar
- * disappears on its own once the account verifies, because the /verify-email
- * page writes the new state back into this same store.
+ * Reads `emailVerified` from the auth store directly (not `useAuth()`, which
+ * drops the flag). The bar clears itself once verified, since /verify-email
+ * writes the new state back into this same store.
  */
 export function VerificationBanner() {
   const status = useAuthStore((s) => s.status);
@@ -32,14 +30,12 @@ export function VerificationBanner() {
     setState('sending');
     try {
       await resendVerification(
-        // Read the token fresh at click time — an earlier tab-open could have
-        // refreshed it since mount.
+        // Read the token fresh at click time — it may have refreshed since mount.
         () => useAuthStore.getState().accessToken,
-        // authFetch performs its own refresh on a 401; when it does, persist
-        // the rotated session so the rest of the app keeps the new token.
+        // On a 401 refresh, persist the rotated session so the app keeps the
+        // new token.
         ({ accessToken, user }) => setSession(accessToken, user),
-        // Refresh itself failed — the session is gone; RequireAuth will bounce
-        // to /login once the store flips to unauthenticated.
+        // Refresh failed — clear the session; RequireAuth bounces to /login.
         () => clearSession(),
       );
       setState('sent');

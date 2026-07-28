@@ -38,10 +38,9 @@ export function MessageContent({ content }: { content: string }) {
         strong: ({ children }) => (
           <strong className="font-semibold text-ink">{children}</strong>
         ),
-        // rehype-highlight only adds a `language-*` class to block code
-        // (the <code> nested inside <pre>) — inline code has no className,
-        // which is the documented way to tell them apart in react-markdown
-        // v9+ (the old `inline` prop was removed).
+        // rehype-highlight only adds a `language-*` class to block code, so
+        // inline code has no className — the react-markdown v9+ way to tell
+        // them apart (the old `inline` prop was removed).
         code: ({ className, children, ...props }) => {
           if (!className) {
             return (

@@ -11,13 +11,10 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const STAR_COUNT = 160;
 
 /**
- * Deterministic pseudo-random in [0, 1) from a seed — the classic
- * `fract(sin(x) * k)` hash. Using this instead of Math.random() for the
- * rendered star positions means the markup is identical on server and
- * client (no hydration mismatch), and the field is present at its final
- * positions even before JS runs — so the reduced-motion and no-JS cases
- * still show a proper static star field. Animation params (below) can use
- * Math.random freely since they only run client-side inside the effect.
+ * Deterministic pseudo-random in [0, 1) from a seed. Used instead of
+ * Math.random() for star positions so server and client markup match (no
+ * hydration mismatch) and the field is present before JS runs. Animation
+ * params can use Math.random freely — they only run client-side.
  */
 function hash(seed: number) {
   const x = Math.sin(seed) * 43758.5453;
@@ -25,13 +22,10 @@ function hash(seed: number) {
 }
 
 /**
- * Rounded to 3 decimals before it ever reaches JSX: the browser's CSSOM
- * serializes inline-style numbers to ~6 significant digits, so a
- * full-precision float like `25.375252397498116` round-trips back out of
- * `element.style.left` as `25.3753%` — different from the string React
- * rendered server-side, which reads as a hydration mismatch even though the
- * value is deterministic. Rounding here makes the authored string stable
- * under that round-trip.
+ * Rounded to 3 decimals before reaching JSX: the CSSOM serializes inline-style
+ * numbers to ~6 significant digits, so a full-precision float round-trips back
+ * out of `element.style` as a different string — read as a hydration mismatch.
+ * Rounding keeps the authored string stable.
  */
 function round(n: number) {
   return Math.round(n * 1000) / 1000;
@@ -41,10 +35,8 @@ const STARS = Array.from({ length: STAR_COUNT }, (_, i) => ({
   left: round(hash(i * 1.7) * 100),
   top: round(hash(i * 2.9) * 100),
   size: round(1 + hash(i * 4.1) * 1.6),
-  // Floor raised from 0.12 and range widened from 0.32 — at the old values the
-  // field read as almost empty against the near-black background instead of a
-  // proper sky. Still capped at 0.55 (i.e., stays dimmer than the foreground's
-  // cosmic-light content) so the figure/ground split holds.
+  // Capped at ~0.55 so the field stays dimmer than the foreground content and
+  // the figure/ground split holds.
   opacity: round(0.18 + hash(i * 6.3) * 0.37),
 }));
 
@@ -60,12 +52,9 @@ export function AmbientStarField() {
       const wrapper = wrapperRef.current;
       if (!layer || !wrapper) return;
 
-      // Vertical parallax: the star layer lags behind page scroll, reading
-      // as depth. Triggered off the wrapper (pinned to the section via
-      // inset-0), transforming the *inner* layer — which is taller than the
-      // wrapper with headroom top/bottom, so translating it never reveals an
-      // uncovered edge. Non-circular: we measure/trigger on one element and
-      // transform a different one.
+      // Vertical parallax: the star layer lags page scroll, reading as depth.
+      // Triggered off the wrapper but transforming the inner layer, which is
+      // taller with headroom top/bottom so translating it never reveals an edge.
       gsap.to(layer, {
         yPercent: 10,
         ease: 'none',
@@ -77,10 +66,9 @@ export function AmbientStarField() {
         },
       });
 
-      // Gentle per-star life: a slow positional sway + an opacity twinkle,
-      // each with randomized duration/phase so the field never pulses in
-      // unison. Random is safe here — this is inside the client-only effect,
-      // so it never touches the server-rendered markup.
+      // Gentle per-star life: a slow sway + opacity twinkle, each with random
+      // duration/phase so the field never pulses in unison. Random is safe
+      // here — inside the client-only effect, never in the SSR markup.
       const stars = layer.querySelectorAll<HTMLDivElement>(
         '[data-ambient-star]',
       );

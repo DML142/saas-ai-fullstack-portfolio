@@ -36,10 +36,8 @@ export function Navbar() {
   const handleAnchorClick = useSmoothAnchor();
   const pathname = usePathname();
 
-  // The dashboard is its own app-like surface with its own header (sidebar +
-  // account badge) — the marketing nav (Home/Features/Reviews/Pricing) and
-  // this component's hooks (all called above, before this check, to keep
-  // hook order stable) don't belong there.
+  // The dashboard has its own header, so the marketing nav doesn't belong
+  // there. Hooks are all called above this check to keep hook order stable.
   if (pathname.startsWith('/dashboard')) return null;
 
   return (
@@ -84,11 +82,8 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* mobile menu panel — always mounted (not conditionally rendered) so
-          the opacity/transform transition has a "before" state to animate
-          from; `absolute` keeps it out of document flow while closed so it
-          doesn't reserve empty space, anchored to the header's own box
-          (`fixed` above already establishes the containing block). */}
+      {/* mobile menu panel — always mounted so the transition has a "before"
+          state; `absolute` keeps it out of flow while closed. */}
       <div
         className={`absolute inset-x-0 top-full border-t border-border bg-bg/95 backdrop-blur-md transition-all duration-300 md:hidden ${
           mobileOpen

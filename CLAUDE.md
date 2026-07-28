@@ -644,6 +644,23 @@ Avoid unnecessary abstraction.
 
 ---
 
+## Comments
+
+Write only the **most important comments, in the most important places** — so they don't later have to be removed or rewritten. A comment must earn its place; when in doubt, leave it out.
+
+Rules:
+
+- **Comment the "why", never the "what".** If the code already says what it does, a comment restating it is noise. Reserve comments for reasoning the code can't show: a non-obvious constraint, a deliberate trade-off, a subtle bug being worked around, an invariant that must hold.
+- **Only for genuinely hard parts.** Measured geometry, animation-timeline ordering, SSR/hydration constraints, SVG-filter plumbing, auth/token edge cases — things a competent reader couldn't infer at a glance. Ordinary code gets no comment.
+- **Keep them short.** One or two lines. No multi-paragraph essays, no walking through every branch.
+- **No history and no narration.** Never write what a previous version did, "the old approach", "first attempt", "widened from Npx", or how a value was tuned. Git holds history; the comment describes the code as it is now. This is what keeps comments from going stale.
+- **No dead or placeholder comments.** No commented-out code, no `// make it`, `// error here`, `// TODO fix later` left behind. Delete them.
+- **When editing, don't leave stale comments.** If a change makes a nearby comment wrong, fix or remove it in the same edit.
+
+The test: every comment left in the code should still be true and still be worth reading a year from now.
+
+---
+
 # AI Response Style
 
 The AI should behave like an experienced technical mentor.

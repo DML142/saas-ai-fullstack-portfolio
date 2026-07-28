@@ -17,11 +17,8 @@ export default function SettingsPage() {
     try {
       await logout();
     } finally {
-      // No explicit redirect here — clearing the session flips
-      // useAuthStore's status to 'unauthenticated', and <RequireAuth> (which
-      // wraps every /dashboard route) reacts to that on its own and sends
-      // the user to /login. Duplicating that navigation here would just be
-      // two places deciding the same thing.
+      // No explicit redirect — clearing the session flips the status to
+      // 'unauthenticated' and <RequireAuth> sends the user to /login.
       useAuthStore.getState().clearSession();
     }
   }

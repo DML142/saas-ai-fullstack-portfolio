@@ -76,7 +76,6 @@ export async function me(accessToken: string): Promise<AuthUser> {
   return parseOrThrow(res);
 }
 
-//email verification work here
 export async function verifyEmail(token: string): Promise<void> {
   const res = await fetch(`${API_URL}/auth/verify-email`, {
     method: 'POST',

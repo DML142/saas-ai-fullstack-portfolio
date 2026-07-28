@@ -102,11 +102,8 @@ export function FaqList() {
       const rows = rowRefs.current.filter(Boolean) as HTMLDivElement[];
 
       lines.forEach((line) => {
-        // A separator here is a plain rule between two fixed rows, so growing it
-        // from the centre is one `scaleX` tween off a centred transform-origin —
-        // no SVG, no measured endpoints. FeatureStars needed real
-        // `stroke-dashoffset` draws only because its lines ran between two
-        // independently-positioned stars; this shape doesn't.
+        // A separator is a plain rule between two fixed rows, so growing it
+        // from the centre is one `scaleX` tween — no SVG or measured endpoints.
         gsap.fromTo(
           line,
           { scaleX: 0 },
@@ -124,12 +121,9 @@ export function FaqList() {
       });
 
       rows.forEach((row) => {
-        // Each question fades up as its own top edge crosses the bottom of the
-        // viewport — a discrete reveal, not scrubbed like the separators above.
-        // `toggleActions` ends in `none`, not `reverse`: once a question has
-        // been read, scrolling back up shouldn't hide it again — same
-        // "never re-hide already-revealed content" rule the rest of the page
-        // follows for scroll reveals.
+        // Each question fades up as it enters the viewport — a discrete reveal,
+        // not scrubbed. `toggleActions` ends in `none`, not `reverse`, so a
+        // revealed question isn't re-hidden on scroll-up.
         gsap.fromTo(
           row,
           { autoAlpha: 0, y: 24 },
@@ -160,8 +154,8 @@ export function FaqList() {
                 lineRefs.current[i] = el;
               }}
               aria-hidden
-              // Authored fully drawn and only shrunk by JS, so no-JS and any
-              // failure to reach the effect leave the separators intact.
+              // Authored fully drawn and only shrunk by JS, so no-JS leaves
+              // the separators intact.
               className="my-10 h-px origin-center bg-cosmic-light/25"
             />
           )}

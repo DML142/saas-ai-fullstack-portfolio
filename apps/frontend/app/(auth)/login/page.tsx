@@ -49,12 +49,8 @@ export default function LoginPage() {
       if (reducedMotion) return;
       const groups = formRef.current?.querySelectorAll('[data-anim]');
       if (!groups?.length) return;
-      // GSAP sets the `from` values synchronously at tween creation, before
-      // paint — unlike a CSS `animation-delay`, which shows the element's
-      // normal, fully-visible state for the whole delay window before the
-      // timeline actually engages and jumps it to the hidden keyframe. That
-      // flash-then-hide-then-animate sequence is exactly what a CSS-only
-      // version of this reveal produced.
+      // GSAP sets the `from` values before paint, so there's no flash of the
+      // fully-visible state that a CSS `animation-delay` would show.
       const tween = gsap.fromTo(
         groups,
         { autoAlpha: 0, y: 16 },
@@ -65,22 +61,16 @@ export default function LoginPage() {
           ease: 'power2.out',
           stagger: 0.15,
           // Once revealed, strip GSAP's inline styles so the elements rest in
-          // their natural (visible) CSS state — nothing left for a later
-          // context revert to strand at autoAlpha:0.
+          // their natural CSS state, with nothing to strand at autoAlpha:0.
           clearProps: 'visibility,opacity,transform',
         },
       );
 
-      // Fail-open safety net. This is a login form, so it must never stay
-      // invisible: the reveal above hides it (autoAlpha:0) and only the tween
-      // brings it back, and GSAP's tween advances on requestAnimationFrame —
-      // which the browser PAUSES for a backgrounded/non-compositing tab. If the
-      // tab is loaded in the background, the `from` state is applied but the
-      // tween can't progress, leaving the form hidden until focus. setTimeout
-      // (unlike rAF) still fires in that state, so this forces the final
-      // visible state if the tween hasn't finished by the time it should have.
-      // On a normal foreground load the tween completes first (~0.8s) and this
-      // is a harmless no-op.
+      // Fail-open safety net: the reveal hides the form and only the tween
+      // brings it back, but GSAP's tween advances on requestAnimationFrame,
+      // which pauses for a backgrounded tab. setTimeout still fires there, so
+      // it forces the visible state if the tween hasn't finished; a no-op on
+      // normal foreground loads.
       const failsafe = window.setTimeout(() => {
         if (tween.progress() < 1 && formRef.current) {
           gsap.set(groups, { clearProps: 'visibility,opacity,transform' });
@@ -128,8 +118,7 @@ export default function LoginPage() {
             {form.formState.errors.password.message}
           </p>
         )}
-        {/* Sits with the password field — the conventional spot users look for
-            reset, and the only entry point to the /forgot-password flow. */}
+        {/* Sits with the password field — the only entry to /forgot-password. */}
         <Link
           href="/forgot-password"
           className="self-end text-xs text-cosmic-light underline decoration-cosmic-light/40 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink/60"
@@ -140,15 +129,12 @@ export default function LoginPage() {
 
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
-      {/* Button and link stacked, not side by side — a small gap keeps them
-          from reading as one control. */}
       <div data-anim className="flex flex-col items-center gap-3">
         <PlanButton type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? 'Logging in...' : 'Login'}
         </PlanButton>
 
-        {/* Same treatment as Pricing's "contact our sales manager" link — a
-            plain underlined link, not another button. */}
+        {/* Plain underlined link, not another button. */}
         <Link
           href="/register"
           className="text-sm text-cosmic-light underline decoration-cosmic-light/40 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink/60"

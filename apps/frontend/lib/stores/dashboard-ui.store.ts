@@ -1,10 +1,7 @@
 import { create } from 'zustand';
 
-/** Mobile-only sidebar drawer state. Lives in its own store, not the
- * Sidebar's local state, because the toggle button naturally belongs in the
- * chat header (ChatPanel) while the panel itself renders from the layout
- * (Sidebar) — same sibling-communication problem the workspace switcher
- * already solved this way. */
+/** Mobile-only sidebar drawer state. In its own store because the toggle lives
+ * in the chat header (ChatPanel) while the drawer renders from Sidebar. */
 interface DashboardUiState {
   sidebarOpen: boolean;
   toggleSidebar: () => void;

@@ -28,17 +28,15 @@ function VerifyEmailInner() {
       setStatus('error');
       return;
     }
-    // Guard against React 18 StrictMode's double-invoke in dev: the token is
-    // single-use, so a second fire would 400 a token the first call already
-    // consumed and flip a real success into a spurious error.
+    // Guard StrictMode's dev double-invoke: the token is single-use, so a
+    // second fire would 400 a token the first call already consumed.
     let cancelled = false;
     verifyEmail(token)
       .then(() => {
         if (cancelled) return;
         setStatus('success');
-        // If this user is the one currently signed in, reflect the new
-        // verified state in the store so the unverified banner clears without
-        // a reload. (No session? Nothing to update — the link still works.)
+        // If this user is signed in, update the store so the unverified banner
+        // clears without a reload. (No session? Nothing to update.)
         if (accessToken && user && !user.emailVerified) {
           setSession(accessToken, { ...user, emailVerified: true });
         }
@@ -49,8 +47,8 @@ function VerifyEmailInner() {
     return () => {
       cancelled = true;
     };
-    // Intentionally keyed only on `token`: store values are read as a snapshot
-    // inside the effect and must not re-trigger the single-use verification.
+    // Keyed only on `token`: store values are read as a snapshot and must not
+    // re-trigger the single-use verification.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

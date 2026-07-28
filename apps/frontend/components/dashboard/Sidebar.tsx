@@ -35,9 +35,8 @@ export function Sidebar() {
   const closeSidebar = useDashboardUiStore((s) => s.closeSidebar);
   const isMobile = useMediaQuery(MOBILE_QUERY);
 
-  // Which workspace (if any) each dialog is acting on. Holding the whole
-  // object, not just the id, keeps the dialog copy stable even if the list
-  // re-renders underneath.
+  // Which workspace each dialog acts on. Holding the whole object (not the id)
+  // keeps the dialog copy stable if the list re-renders.
   const [renameTarget, setRenameTarget] = useState<Workspace | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Workspace | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
@@ -64,8 +63,8 @@ export function Sidebar() {
     setBusy(true);
     try {
       await deleteWorkspace(deleteTarget.id);
-      // Drop the workspace *and* its cached messages — the server cascade
-      // already removed them, so leaving them in the store would be stale.
+      // Drop the workspace and its cached messages — the server already
+      // cascade-deleted them, so keeping them here would be stale.
       useWorkspaceStore.getState().deleteWorkspace(deleteTarget.id);
       useMessageStore.getState().dropWorkspace(deleteTarget.id);
       setDeleteTarget(null);
@@ -84,16 +83,13 @@ export function Sidebar() {
 
       if (pathname !== '/dashboard') router.push('/dashboard');
       closeSidebar();
-    } catch {
-      //error here
-    }
+    } catch {}
   }
 
   function selectWorkspace(id: string) {
     setActive(id);
-    // Picking a workspace from anywhere (e.g. from /dashboard/settings)
-    // should land back on the main chat view, same as clicking a chat in
-    // Claude Desktop's sidebar switches both the selection and the view.
+    // Picking a workspace from anywhere (e.g. settings) lands back on the
+    // main chat view.
     if (pathname !== '/dashboard') router.push('/dashboard');
     closeSidebar();
   }
@@ -101,9 +97,7 @@ export function Sidebar() {
   return (
     <>
       {/* Backdrop: mobile only (md:hidden), dims the chat behind the open
-          drawer and doubles as a tap-to-close target. Not `isMobile`-gated
-          in JS — md:hidden already removes it from layout/paint on desktop
-          regardless of `sidebarOpen`, so no extra condition needed here. */}
+          drawer and doubles as a tap-to-close target. */}
       <div
         onClick={closeSidebar}
         aria-hidden
@@ -114,18 +108,14 @@ export function Sidebar() {
       />
 
       <aside
-        // `inert` blocks keyboard/AT focus into an off-screen drawer — but
-        // only on mobile. On desktop the sidebar is always visible and must
-        // stay focusable regardless of `sidebarOpen` (that flag is mobile-only
-        // state), hence the `isMobile` gate rather than using `!sidebarOpen`
-        // directly.
+        // `inert` blocks focus into the off-screen drawer, but only on mobile:
+        // on desktop the sidebar is always visible and must stay focusable.
         inert={isMobile && !sidebarOpen}
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 flex-col border-r border-border/60 bg-bg px-4 py-6 transition-transform duration-300',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-          // Desktop: back in normal flow, always visible, transform reset.
-          // h-screen (definite height) so the nav's flex-1 has something to
-          // resolve against and can scroll internally instead of overflowing.
+          // Desktop: back in normal flow, always visible. h-screen gives the
+          // nav's flex-1 a definite height to scroll within.
           'md:static md:z-auto md:h-screen md:translate-x-0 md:bg-card/10',
         )}
       >
@@ -164,14 +154,13 @@ export function Sidebar() {
           {workspaces.map((ws) => {
             const active = pathname === '/dashboard' && ws.id === activeId;
             return (
-              // A row, not a single button: the name and the two actions are
-              // three separate controls, and nesting buttons is invalid HTML.
+              // A row, not one button: name + two actions are three separate
+              // controls, and nesting buttons is invalid HTML.
               <div
                 key={ws.id}
                 className={cn(
-                  // shrink-0 so items keep their natural height and the nav
-                  // actually overflows (and scrolls) instead of compressing
-                  // every row to fit — the default flex-shrink:1 behaviour.
+                  // shrink-0 so rows keep their height and the nav scrolls
+                  // instead of compressing every row to fit.
                   'group flex shrink-0 items-center rounded-lg pr-1 transition-colors',
                   active ? 'bg-primary/15' : 'hover:bg-card/20',
                 )}
@@ -267,9 +256,8 @@ export function Sidebar() {
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-foreground/70">
-            {/* Explicit {' '} rather than relying on the newline after
-                </span> — JSX drops that space here, which renders as
-                "…workspaceNameand all of its messages". */}
+            {/* Explicit trailing space inside the span — JSX drops the
+                newline here, giving "…nameand all of its messages". */}
             Delete <span className="text-ink">{deleteTarget?.name} </span>and
             all of its messages? This can&apos;t be undone.
           </p>

@@ -11,19 +11,16 @@ export default function DashboardLayout({
 }) {
   return (
     <RequireAuth>
-      {/* No pt-20 here — the global Navbar hides itself on /dashboard
-          routes, so there's no fixed header left to clear.
-          h-screen + overflow-hidden bounds the whole dashboard to the viewport
-          so the page itself never scrolls; scrolling is confined to the chat
-          panel's messages region. min-w-0 on <main> lets its flex child
-          shrink instead of forcing horizontal overflow. */}
+      {/* No pt-20: the Navbar hides itself on /dashboard, so there's no fixed
+          header to clear. h-screen + overflow-hidden bounds the dashboard to
+          the viewport so only the chat's messages region scrolls; min-w-0 lets
+          <main>'s flex child shrink instead of overflowing horizontally. */}
       <div className="flex h-screen overflow-hidden bg-bg text-ink">
         <WorkspaceBootstrap />
         <ChatSocketBootstrap />
         <Sidebar />
-        {/* Column so the unverified banner stacks above the page's own scroll
-            region; min-h-0 lets the children area shrink and keep its internal
-            scroll instead of pushing the banner off-screen. */}
+        {/* Column so the banner stacks above the scroll region; min-h-0 lets
+            the children area keep its internal scroll. */}
         <main className="flex min-w-0 flex-1 flex-col">
           <VerificationBanner />
           <div className="min-h-0 flex-1">{children}</div>
