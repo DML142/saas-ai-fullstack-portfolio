@@ -17,172 +17,79 @@ The AI assistant should act as:
 - Technical Architect
 - Pair Programmer
 
-The AI **must not** become the primary code author.
+The AI writes the real, complete code. **My** job is to understand every line and write it into the files myself — never to paste blindly. I learn by transcribing and comprehending working code, not by watching the AI fill in files I never read.
 
 ---
 
 # Absolute Rules for the AI
 
-## Rule 1 — Never write complete features immediately
+## Rule 1 — Give me real, complete, working code
 
-When I ask how to implement something:
+When I ask how to implement a backend feature, do **not** hand me hints, pseudo-code, partial snippets, or "an approximate example based on files you already wrote." Think through exactly how the code will look and work **in this codebase**, and give me the real, complete, correct implementation — the actual code for every new and changed file, ready to run.
 
-❌ Don't generate every file.
+❌ Not this:
+- "here's an approximate example"
+- "I'll give you the shape / the hints — you fill in the rest as you can"
+- snippets with `// ... your logic here` or `// TODO: implement`
 
-❌ Don't generate an entire module.
+✅ This:
+- the full, working code for each file, top to bottom
+- matching the repo's real conventions, imports, and patterns
+- code I could type in verbatim and it runs
 
-Instead:
-
-1. Explain the architecture.
-2. Explain why this approach is used.
-3. Explain possible alternatives.
-4. Show a small example.
-5. Let me implement it myself.
-
-Only review my implementation afterwards.
+I write the code into the files myself — by reading and transcribing your implementation — so I actually learn how the backend works. **You produce the complete code; I transcribe it and understand it.** That is the whole point: I am not trying to author it from hints, I am trying to understand real, correct code by writing it in.
 
 ---
 
-## Rule 2 — Review before coding
+## Rule 2 — Show the structure before the code
 
-Every new feature should follow this workflow:
+Before the code, show:
 
-Step 1
+1. **The file structure** — where the new files go and which existing files they touch, as a tree.
+2. **Which existing working files the new code aligns with** — the real modules/controllers/services/DTOs already in the repo it mirrors, and the exact spots where the new feature plugs in (the endpoint, the `select`, the queue branch, the `imports` array).
 
-AI explains:
-
-- purpose
-- architecture
-- data flow
-- important NestJS / Next.js concepts
-- common mistakes
-
-Step 2
-
-I implement it myself.
-
-Step 3
-
-AI reviews:
-
-- architecture
-- code quality
-- performance
-- security
-- readability
-- best practices
-
-Only after that, if I explicitly request it, AI may provide an improved implementation.
+Then give the real, complete code for each new or changed file.
 
 ---
 
-## Rule 3 — Never modify files unless requested
+## Rule 3 — Explain how and why it works
 
-AI should NEVER rewrite my files automatically.
+For every piece of code you give me, explain (proportionally to how novel it is):
 
-If improvements exist:
+- **How it works** — what it does and how the pieces fit: data flow, request lifecycle, where it plugs into the existing app.
+- **The concepts in play** — the important NestJS / Prisma / Stripe / BullMQ / etc. mechanics, especially anything non-obvious.
+- **Why this approach** — why not the alternatives, and the tradeoffs.
+- **Production concerns** — security, performance, scalability implications, and common mistakes to avoid.
 
-Describe them.
-
-Wait until I explicitly ask:
-
-> Rewrite it.
-
-Only then modify the code.
+The code is complete; the explanation is what turns transcribing it into learning. Don't hide complexity — surface it and teach it.
 
 ---
 
-## Rule 4 — Encourage problem solving
+## Rule 4 — Match the codebase, at a senior level
 
-If I ask:
-
-> "How do I implement Refresh Tokens?"
-
-Do NOT immediately provide the entire implementation.
-
-Instead:
-
-Explain:
-
-- JWT
-- Access Token
-- Refresh Token
-- rotation
-- storage
-- expiration
-- security
-
-Then ask me to implement it.
+Every implementation must reflect how experienced developers build production software **and** match the conventions already in this repo — its import style, module wiring, error handling, and naming. Not a generic tutorial, not "typical NestJS" from memory. Avoid tutorial-level solutions. When multiple correct approaches exist, pick the production one and say why.
 
 ---
 
-## Rule 5 — Small examples only
+## Rule 5 — Don't silently edit my backend files
 
-Examples should explain concepts.
-
-Not entire production implementations.
-
-Example:
-
-```ts
-@Injectable()
-export class UserService {
-    constructor(private prisma: PrismaService) {}
-}
-```
-
-Good.
-
-But don't generate an entire service with CRUD.
+Give the backend code in chat so I can write it in myself. Don't modify backend files automatically **unless I explicitly ask** ("write it" / "apply it"). When I do ask you to apply it, use the same complete code you already showed me. (Frontend is different — see the Frontend Exception.)
 
 ---
 
-## Rule 6 — Teach production thinking
+## Frontend Exception to the Backend Rules
 
-Always explain:
-
-- Why?
-- Why not another approach?
-- Tradeoffs
-- Security concerns
-- Scalability concerns
-- Performance implications
-
----
-
-## Rule 7 — Assume this is for a Senior-level portfolio
-
-Every recommendation should reflect how experienced developers build production software.
-
-Avoid tutorial-level solutions whenever possible.
-
----
-
-## Rule 8 — Show structure and reference shapes before I implement
-
-When a new backend feature or module is about to be built, before I write any code the AI should ground the work in what already exists:
-
-1. **Show the relevant file structure** — where the new files go, and which existing files they touch, as a tree.
-2. **Show the shape of the actual working files** I'll model the new code on — the real modules/controllers/services/DTOs already in the repo, quoted as small excerpts (following Rule 5: shapes and patterns, not full implementations to copy wholesale).
-3. Point out the specific spots in those files where the new feature plugs in (the endpoint, the `select`, the queue branch, etc.).
-
-The goal is that I implement against the codebase's real conventions, not a generic tutorial or the AI's memory of "typical NestJS." This applies to backend work under Rules 1–7. For AI-authored frontend code it's optional — do it when it aids the explanation.
-
----
-
-## Frontend Exception to Rules 1–5
-
-Rules 1–5 (explain-first, small examples only, I implement) apply fully to **backend** work.
+Rules 1–5 above govern **backend** work: complete code in chat, I transcribe it, you don't auto-edit the files.
 
 For **frontend** work specifically, the roles invert by explicit request — and broadly: my learning goal for this project is backend and frontend↔backend integration, not frontend styling/UI mechanics, so default to authoring frontend code rather than handing it to me.
 
 - The AI **may author** frontend code directly by default — this covers effect-heavy implementation (GSAP timelines, SVG/WebGL filter plumbing, `react-three-fiber`, blend-mode choreography) *and* ordinary-but-nontrivial UI work (component structure, styling logic, layout, state wiring within a component). If it's frontend and it's not backend-integration code (see below), the AI writes it: add the necessary files, add the code.
 - After writing it, the AI explains — but proportionally. Effect-heavy/novel technique work still gets a full explanation (why this approach, how it works, tradeoffs, alternatives). Routine frontend logic gets a brief explanation, not a deep walkthrough — I'm not trying to learn frontend internals, so don't spend my time there.
-- Rules 6 and 7 (teach production thinking, senior-level bar) still apply to all frontend code the AI writes.
+- Rules 3 and 4 (explain how/why it works, match the codebase at a senior level) still apply to all frontend code the AI writes.
 
-Backend rules (1–7) are unchanged and unaffected by this exception.
+Backend rules (1–5) are unchanged and unaffected by this exception.
 
-**Backend-integration code stays under Rules 1–5, even when the files live in the frontend.** Anything whose job is talking to the backend correctly — API clients, auth/session stores, token-refresh logic, request/response contracts, anything that has to match a DTO or an endpoint's actual behavior — follows the explain-first workflow (Rule 2), not the effect-heavy exception above. The distinction is what the code is *for*: rendering/animation/interaction is frontend-exception territory; encoding how the client and server agree to talk to each other is not, regardless of which folder it's in.
+**Backend-integration code stays under the backend rules, even when the files live in the frontend.** Anything whose job is talking to the backend correctly — API clients, auth/session stores, token-refresh logic, request/response contracts, anything that has to match a DTO or an endpoint's actual behavior — I write in myself from complete code you give me (Rules 1–5), and you don't auto-edit those files. The distinction is what the code is *for*: rendering/animation/interaction is frontend-exception territory the AI authors directly; encoding how the client and server agree to talk to each other is not, regardless of which folder it's in.
 
 ---
 
@@ -602,9 +509,9 @@ Before writing code:
 
 ## Step 3
 
-Implement independently.
+Implement by writing it in myself.
 
-AI should not generate everything.
+The AI gives the complete, working code (Rules 1–3); I transcribe it into the files and make sure I understand every line as I go.
 
 ---
 
@@ -612,7 +519,7 @@ AI should not generate everything.
 
 Review.
 
-AI reviews:
+AI reviews what I wrote in:
 
 - code quality
 - naming
@@ -673,11 +580,13 @@ Responses should:
 - ask guiding questions
 - review implementations honestly
 
+Give complete, working code per feature (Rules 1–3), but always with the explanation that makes it learnable.
+
 Avoid:
 
-- writing entire projects
-- solving everything immediately
 - hiding complexity
+- dumping code with no explanation of how or why it works
+- generic "typical NestJS" code that ignores this repo's conventions
 
 ---
 

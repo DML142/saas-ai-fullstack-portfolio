@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PasswordController } from './password.controller';
+import { PasswordService } from './password.service';
 
 describe('PasswordController', () => {
   let controller: PasswordController;
@@ -7,6 +8,7 @@ describe('PasswordController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PasswordController],
+      providers: [{ provide: PasswordService, useValue: {} }],
     }).compile();
 
     controller = module.get<PasswordController>(PasswordController);

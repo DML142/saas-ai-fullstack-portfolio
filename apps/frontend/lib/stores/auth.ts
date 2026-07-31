@@ -5,6 +5,7 @@ export interface AuthUser {
   email: string;
   emailVerified: boolean;
   role: 'USER' | 'PREMIUM' | 'ADMIN';
+  tier: SubscriptionTier;
   createdAt: string;
   updatedAt: string;
 }
@@ -12,6 +13,45 @@ export interface AuthUser {
 export interface Session {
   accessToken: string;
   user: AuthUser;
+}
+
+export type SubscriptionTier = 'FREE' | 'LITE' | 'PRO' | 'ULTRA';
+
+export type PaidTier = 'LITE' | 'PRO' | 'ULTRA';
+
+export async function startCheckout(
+  tier: PaidTier,
+  getToken: () => string | null,
+  onRefreshed: (session: { accessToken: string; user: AuthUser }) => void,
+  onSessionLost: () => void,
+): Promise<{ url: string }> {
+  const res = await authFetch(
+    `${API_URL}/billing/checkout`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier }),
+    },
+    getToken,
+    onRefreshed,
+    onSessionLost,
+  );
+  return parseOrThrow(res);
+}
+
+export async function openBillingPortal(
+  getToken: () => string | null,
+  onRefreshed: (session: { accessToken: string; user: AuthUser }) => void,
+  onSessionLost: () => void,
+): Promise<{ url: string }> {
+  const res = await authFetch(
+    `${API_URL}/billing/portal`,
+    { method: 'POST' },
+    getToken,
+    onRefreshed,
+    onSessionLost,
+  );
+  return parseOrThrow(res);
 }
 
 function toSession(

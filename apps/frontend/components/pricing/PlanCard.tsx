@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils';
 import { StarMark } from '@/components/features/starVisuals';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { UltraGlow } from './UltraGlow';
-import { PlanButton } from './PlanButton';
+import { CheckoutButton } from './CheckoutButton';
+import type { PaidTier } from '@/lib/stores/auth';
 
 gsap.registerPlugin(useGSAP);
 
@@ -113,7 +114,8 @@ function PlanStar({ star }: { star: Plan['star'] }) {
 }
 
 export function PlanCard({ plan }: { plan: Plan }) {
-  const { name, price, tagline, features, star, orderClass, featured } = plan;
+  const { id, name, price, tagline, features, star, orderClass, featured } =
+    plan;
 
   return (
     <li className={cn('relative flex flex-col items-center', orderClass)}>
@@ -185,7 +187,9 @@ export function PlanCard({ plan }: { plan: Plan }) {
           {/* mt-auto pins the CTA to the bottom, so buttons line up across
               cards whose feature lists differ in length. */}
           <div className="mt-auto pt-8">
-            <PlanButton>Choose {name}</PlanButton>
+            {/* Plan ids are the paid tiers lowercased; map to the PaidTier the
+                checkout endpoint expects. */}
+            <CheckoutButton tier={id.toUpperCase() as PaidTier} name={name} />
           </div>
         </div>
       </div>

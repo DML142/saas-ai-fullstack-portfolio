@@ -12,4 +12,11 @@ export class MailService {
   async queuePasswordResetEmail(to: string, token: string) {
     await this.emailQueue.add('reset', { to, token });
   }
+
+  async queuePaymentFailedEmail(to: string) {
+    await this.emailQueue.add('payment_failed', { to });
+  }
+  async queueSubscriptionConfirmedEmail(to: string) {
+    await this.emailQueue.add('subscription_confirmed', { to });
+  }
 }

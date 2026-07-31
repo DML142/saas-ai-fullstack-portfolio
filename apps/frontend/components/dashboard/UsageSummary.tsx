@@ -1,6 +1,15 @@
-/** Illustrative only — no billing/usage backend yet. Numbers are static;
- * "Lite" just mirrors the Pricing tier names, not coupled to that data. */
-const TIER_NAME = 'Lite';
+'use client';
+
+import { useAuthStore } from '@/lib/stores/auth.store';
+
+/** The plan name is now real (webhook-synced tier); the usage numbers below are
+ * still illustrative — there's no usage-metering backend yet. */
+const TIER_LABEL: Record<string, string> = {
+  FREE: 'Free',
+  LITE: 'Lite',
+  PRO: 'Pro',
+  ULTRA: 'Ultra',
+};
 
 const USAGE = [
   { label: 'COS Cloud storage', used: 1.2, limit: 5, unit: 'GB' },
@@ -8,10 +17,13 @@ const USAGE = [
 ];
 
 export function UsageSummary() {
+  const tier = useAuthStore((s) => s.user?.tier);
+  const tierName = TIER_LABEL[tier ?? 'FREE'] ?? 'Free';
+
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card/10 p-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-ink">{TIER_NAME} plan</span>
+        <span className="text-sm text-ink">{tierName} plan</span>
         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-cosmic-light">
           Preview
         </span>

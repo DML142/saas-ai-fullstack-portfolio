@@ -7,6 +7,7 @@ import { RedisModule } from 'src/redis/redis.module';
 import { PrismaModule } from 'src/PrismaModule';
 import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from 'src/mail/mail.module';
+import { BillingModule } from 'src/billing/billing.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MailModule } from 'src/mail/mail.module';
     RedisModule,
     PrismaModule,
     MailModule,
+    BillingModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

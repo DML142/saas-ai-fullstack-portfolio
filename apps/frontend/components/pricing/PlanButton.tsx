@@ -17,6 +17,7 @@ export function PlanButton({
   className,
   type = 'button',
   disabled,
+  onClick,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -24,11 +25,13 @@ export function PlanButton({
    * 'submit' explicitly. */
   type?: 'button' | 'submit';
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
+      onClick={onClick}
       style={{ ['--ledge' as string]: LEDGE }}
       className={cn(
         'group relative isolate w-full overflow-hidden rounded-xl px-6 py-3 font-medium text-ink',

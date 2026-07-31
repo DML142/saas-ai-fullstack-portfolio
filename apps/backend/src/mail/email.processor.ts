@@ -20,11 +20,11 @@ export class EmailProcessor extends WorkerHost {
     secure: false,
   });
 
-  async process(job: Job<{ to: string; token: string }>) {
+  async process(job: Job<{ to: string; token?: string }>) {
     const { to, token } = job.data;
 
     if (job.name === 'verification') {
-      const link = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+      const link = `${process.env.FRONTEND_URL}/verify-email?token=${token ?? ''}`;
       await this.transporter.sendMail({
         from: 'COS Code <no-reply@coscode.dev>',
         to,
@@ -43,7 +43,7 @@ export class EmailProcessor extends WorkerHost {
         ),
       });
     } else if (job.name === 'reset') {
-      const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+      const link = `${process.env.FRONTEND_URL}/reset-password?token=${token ?? ''}`;
       await this.transporter.sendMail({
         from: 'COS Code <no-reply@coscode.dev>',
         to,
@@ -59,6 +59,44 @@ export class EmailProcessor extends WorkerHost {
           'Reset password',
           link,
           'If you didn’t request this, you can safely ignore this email — your password stays the same.',
+        ),
+      });
+    } else if (job.name === 'payment_failed') {
+      const link = `${process.env.FRONTEND_URL}/dashboard/settings`;
+      await this.transporter.sendMail({
+        from: 'COS Code <no-reply@coscoce>',
+        to,
+        subject: 'Your COS Code -payment failed',
+        text: this.renderText(
+          "We couldn't process the payment for your COS Code subscription.",
+          'Update payment method',
+          link,
+        ),
+        html: this.renderHtml(
+          "Your payment didn't go through",
+          "We couldn't process the payment method for your COS Code subscription. Update your payment method to keep your plan active.",
+          'Update payment method',
+          link,
+          "If you've already updated your details, you can ignore this message.",
+        ),
+      });
+    } else if (job.name === 'subscription_confirmed') {
+      const link = `${process.env.FRONTEND_URL}/dashboard`;
+      await this.transporter.sendMail({
+        from: 'COS Code <no-reply@coscode.dev>',
+        to,
+        subject: 'Your COS subscription is active',
+        text: this.renderText(
+          'Thanks for subscribing to COS Code. Your plan is now active.',
+          'Open dashboard',
+          link,
+        ),
+        html: this.renderHtml(
+          'Your subscription is active',
+          'Thanks for subscribing to COS Code. Your plan is active and ready to use.',
+          'Open dashboard',
+          link,
+          'Manage or cancel anytime from your billing settings',
         ),
       });
     }

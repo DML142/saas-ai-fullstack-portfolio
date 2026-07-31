@@ -8,6 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, randomUUID } from 'crypto';
 import { Role } from 'generated/prisma/enums';
+import { BillingService } from 'src/billing/billing.service';
 import { MailService } from 'src/mail/mail.service';
 import { PasswordService } from 'src/password/password.service';
 import { PrismaService } from 'src/PrismaService';
@@ -27,6 +28,7 @@ export class AuthService {
     private redisService: RedisService,
     private prisma: PrismaService,
     private mailService: MailService,
+    private billingService: BillingService,
   ) {}
 
   private readonly logger = new Logger(AuthService.name);
@@ -147,6 +149,8 @@ export class AuthService {
 
     const token = await this.issueToken(user.id, user.role);
 
+    const tier = await this.billingService.getEffectiveTier(user.id);
+
     try {
       await this.sendVerificationEmail(user.id, user.email);
     } catch (err) {
@@ -157,6 +161,7 @@ export class AuthService {
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
       ...user,
+      tier,
     };
   }
 
@@ -182,10 +187,13 @@ export class AuthService {
 
     const { passwordHash: _, ...safeUser } = user;
 
+    const tier = await this.billingService.getEffectiveTier(user.id);
+
     return {
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
       ...safeUser,
+      tier,
     };
   }
 
@@ -206,7 +214,9 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    const tier = await this.billingService.getEffectiveTier(userId);
+
+    return { ...user, tier };
   }
 
   private async sendVerificationEmail(userId: string, email: string) {

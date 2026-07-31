@@ -24,6 +24,13 @@ enum MessageRole {
   ASSISTANT
 }
 
+enum SubscriptionTier {
+  FREE
+  LITE
+  PRO
+  ULTRA
+}
+
 model User {
   id String @id @default(uuid())
   email String @unique()
@@ -31,8 +38,31 @@ model User {
   passwordHash String
   role Role @default(USER)
   workspaces Workspace[]
+  stripeCustomerId String? @unique
+  subscription Subscription?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
+}
+
+model Subscription {
+  id String @id @unique @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String @unique
+  stripeCustomerId String
+  stripePriceId String
+  tier SubscriptionTier
+  status String
+  currentPeriodEnd DateTime
+  cancelAtPeriodEnd Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+}
+
+model ProcessedWebhookEvent {
+  id String @id
+  type String
+  processedAt DateTime @default(now()) 
 }
 
 model Workspace {
