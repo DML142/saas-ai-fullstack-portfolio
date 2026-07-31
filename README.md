@@ -4,8 +4,7 @@
   <h1>COS Code — AI SaaS Platform</h1>
 
   <p>
-    A production-shaped fullstack SaaS platform, built to learn the stack —
-    not to fake it.
+    A production-shaped fullstack SaaS platform.
   </p>
 
   <p>
@@ -23,6 +22,8 @@
 itself as an automatic wrapper for AI coding agents — it inspects a project and wires
 in whatever tooling an agent needs (MCP servers, Skills, `.md` context, OpenSpec,
 CodeRabbit). The CLI itself is a marketing prop.
+
+COS Code is **showcase of my skills in programming**, **not the real product**, you can't buy it and use it. In any case, do not buy it with real money.  
 
 **The actual deliverable is everything around it**: the landing page, the auth system,
 the Stripe billing, the queues, the WebSocket chat, the RBAC — a real SaaS
@@ -60,7 +61,7 @@ composition) are understood, not just present.
 
 ---
 
-## Modern stack
+## Stack
 
 <table>
 <tr>
