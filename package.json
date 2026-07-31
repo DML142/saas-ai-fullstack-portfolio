@@ -1,4 +1,5 @@
 {
   "name": "saas-ai-portfolio",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.27.0"
 }

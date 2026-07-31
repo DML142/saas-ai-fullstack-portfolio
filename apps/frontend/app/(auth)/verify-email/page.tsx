@@ -15,7 +15,12 @@ type Status = 'verifying' | 'success' | 'error';
 
 function VerifyEmailInner() {
   const token = useSearchParams().get('token');
-  const [status, setStatus] = useState<Status>('verifying');
+  // A missing token is known at mount time, not something an effect needs to
+  // discover — deriving it in the initializer avoids a synchronous setState
+  // inside the effect below.
+  const [status, setStatus] = useState<Status>(() =>
+    token ? 'verifying' : 'error',
+  );
   const rootRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
 
@@ -24,10 +29,7 @@ function VerifyEmailInner() {
   const setSession = useAuthStore((s) => s.setSession);
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      return;
-    }
+    if (!token) return;
     // Guard StrictMode's dev double-invoke: the token is single-use, so a
     // second fire would 400 a token the first call already consumed.
     let cancelled = false;
