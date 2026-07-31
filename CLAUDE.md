@@ -21,6 +21,14 @@ The AI writes the real, complete code. **My** job is to understand every line an
 
 ---
 
+# Roadmap
+
+`tech.md` tracks what's already implemented and what's next, step by step, from this point to the project's final stage. It is loaded automatically below — keep it updated as features land (move a step from "Next" to "Implemented" once it's actually shipped, don't let it go stale).
+
+@tech.md
+
+---
+
 # Absolute Rules for the AI
 
 ## Rule 1 — Give me real, complete, working code
