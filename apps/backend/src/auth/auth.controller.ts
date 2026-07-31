@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTooManyRequestsResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt.auth.guard';
@@ -19,6 +20,8 @@ import { Role } from 'generated/prisma/enums';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RateLimit } from 'src/rate-limit/decorators/rate-limit.decorator';
+import { RateLimitGuard } from 'src/rate-limit/guards/rate-limit.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -73,6 +76,12 @@ export class AuthController {
     return this.authService.getPublicUser(user.userId);
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10, 60)
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many login attempts from this IP — retry after the window elapses',
+  })
   @Post('login')
   async login(
     @Body() body: LoginDto,
@@ -88,6 +97,12 @@ export class AuthController {
     return rest;
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit(5, 60)
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many registration attempts from this IP — retry after the window elapses',
+  })
   @Post('register')
   async register(
     @Body() body: RegisterDto,
@@ -110,23 +125,46 @@ export class AuthController {
     return { message: 'You are admin!', user: req.user };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @RateLimit(3, 60)
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many resend requests from this IP — retry after the window elapses',
+  })
   @Post('resend-verification')
   resend(@Req() req: Request) {
     const user = req.user as { userId: string; role: Role };
     return this.authService.resendVerificationEmail(user.userId);
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10, 60)
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many verification attempts from this IP — retry after the window elapses',
+  })
   @Post('verify-email')
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.token);
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit(3, 60)
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many forgot-password requests from this IP — retry after the window elapses',
+  })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit(5, 60)
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many reset-password attempts from this IP — retry after the window elapses',
+  })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);

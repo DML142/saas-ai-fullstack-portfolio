@@ -8,6 +8,7 @@ import { PrismaModule } from 'src/PrismaModule';
 import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from 'src/mail/mail.module';
 import { BillingModule } from 'src/billing/billing.module';
+import { RateLimitModule } from 'src/rate-limit/rate-limit.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { BillingModule } from 'src/billing/billing.module';
     PrismaModule,
     MailModule,
     BillingModule,
+    RateLimitModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

@@ -93,6 +93,20 @@ Backend rules (1–5) are unchanged and unaffected by this exception.
 
 ---
 
+## Testing & Docs Exception to the Backend Rules
+
+Rules 1–5 govern **feature** backend code — the business logic I'm here to learn by transcribing. They do **not** apply to three specific categories, which the AI authors directly (writes to disk without waiting for "write it"):
+
+- **Swagger/OpenAPI decorators** (`@ApiOperation`, `@ApiResponse`, `@ApiOkResponse`, `@ApiTooManyRequestsResponse`, etc.) — this is documentation of behavior I already wrote and understand, not new logic to learn.
+- **Test files** (unit/integration/e2e — `*.spec.ts`, `*.e2e-spec.ts`) — writing the test itself doesn't teach me the feature; understanding *why* a scenario matters and reading the assertions does, so the AI writes the test code directly and explains what each test proves and why that scenario matters, rather than having me transcribe test boilerplate.
+- **Running tests / verification** — executing `pnpm test`, hitting endpoints to confirm behavior, checking logs — the AI runs these directly and reports results, rather than asking me to run them and paste output back.
+
+Rule 3 (explain how/why) still applies: for tests specifically, explain what each test proves and why that scenario matters, not just what the code does. Rule 4 (match the codebase, senior-level) still applies to both Swagger annotations and test structure/mocking style.
+
+This exception does not extend to the feature code the tests exercise — that's still written in chat, under Rules 1–5, for me to transcribe.
+
+---
+
 # Project Goal
 
 Build a modern AI SaaS Platform demonstrating:
