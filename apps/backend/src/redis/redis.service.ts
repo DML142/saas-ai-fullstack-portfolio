@@ -59,6 +59,24 @@ export class RedisService implements OnModuleDestroy {
     return this.client.smembers(`user:${userId}:families`);
   }
 
+  //atomic fixed-window counter for rate limiting; null means Redis failed, caller should fail open
+  async incrementWithExpiry(
+    key: string,
+    windowSeconds: number,
+  ): Promise<number | null> {
+    try {
+      const count = await this.client.incr(key);
+
+      if (count === 1) {
+        await this.client.expire(key, windowSeconds);
+      }
+
+      return count;
+    } catch {
+      return null;
+    }
+  }
+
   onModuleDestroy() {
     this.client.disconnect();
   }
