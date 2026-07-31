@@ -52,6 +52,17 @@ through OpenSpec when that step is actually picked up.
 - Dashboard shell: sidebar, workspace/chat switcher, settings (account,
   billing, session), account badge showing role + tier
 
+### Security
+- App-level rate limiting: Redis-backed fixed-window counter (`INCR` +
+  conditional `EXPIRE`), keyed by route + client IP, applied via a
+  `RateLimitGuard`/`@RateLimit` decorator to `/auth/login`, `/auth/register`,
+  `/auth/forgot-password`, `/auth/resend-verification`,
+  `/auth/reset-password`, `/auth/verify-email`
+- Fails open (logs + allows) if Redis is unreachable; `429` + `Retry-After`
+  on limit exceeded
+- Swagger docs (`429` responses) + unit tests (guard behavior, counter
+  behavior); verified live against a running Redis instance
+
 ### Infra & tooling
 - Docker Compose for local dev: Postgres, Redis, Mailpit
   (infra services only — app containers are not part of this yet, see Step 8)
@@ -77,18 +88,7 @@ functionally pointless — this is what closes that loop.
 - Real numbers in `UsageSummary` (currently static placeholder data)
 - Friendly "upgrade to send more" UX when a limit is hit, not just a bare 429
 
-### Step 2 — App-level rate limiting & brute-force protection
-The deferred security item already flagged in this file's parent (CLAUDE.md):
-zero rate limiting exists on any auth route today.
-- Redis-backed throttle (`@nestjs/throttler` + Redis store, or a manual
-  Redis counter) on: `/auth/login`, `/auth/register`,
-  `/auth/forgot-password`, `/auth/resend-verification`,
-  `/auth/reset-password`, `/auth/verify-email`
-- Tests for the 429 path
-- Do this before Step 3 — OAuth adds a second public entry point, the
-  password path should be hardened first
-
-### Step 3 — Google OAuth
+### Step 2 — Google OAuth
 Add Google as a login/register method alongside email+password.
 - Passport Google strategy
 - Account-linking: existing email/password user vs. a new OAuth-only user
@@ -96,7 +96,7 @@ Add Google as a login/register method alongside email+password.
   same refresh-token family tracking)
 - Frontend "Continue with Google" control on login/register
 
-### Step 4 — File uploads (avatar)
+### Step 3 — File uploads (avatar)
 Smallest of the three upload targets CLAUDE.md lists (avatar / documents /
 images) — start here to establish the pattern once, cleanly.
 - Multer-based upload endpoint, size + MIME-type validation
@@ -104,7 +104,7 @@ images) — start here to establish the pattern once, cleanly.
   concern to swap in later (don't build it now)
 - `avatarUrl` on `User`, frontend upload control in Settings
 
-### Step 5 — Cron jobs
+### Step 4 — Cron jobs
 Natural follow-on once uploads exist (there's something to actually clean
 up), and a clean `@nestjs/schedule` learning piece on its own.
 - `@nestjs/schedule` wired into a small `CronModule`
@@ -113,8 +113,8 @@ up), and a clean `@nestjs/schedule` learning piece on its own.
   Redis TTL — this is for whatever doesn't)
 - Logging/observability for job runs (success/failure, duration)
 
-### Step 6 — Admin panel
-The biggest single feature left. Deliberately placed after Steps 1, 4, and 5
+### Step 5 — Admin panel
+The biggest single feature left. Deliberately placed after Steps 1, 3, and 4
 so there's something real to administer (usage limits, uploaded files,
 scheduled jobs) rather than an empty shell.
 - Backend `admin` module, gated by `@Roles(Role.ADMIN)`
@@ -127,7 +127,7 @@ scheduled jobs) rather than an empty shell.
 - Frontend `/admin` route tree: its own layout, tables, confirmation modals
   for destructive actions
 
-### Step 7 — Import / export chat workspace
+### Step 6 — Import / export chat workspace
 Smaller, self-contained UI feature from the original feature list — a good
 finishing touch once the operational features above exist.
 - Backend: serialize a workspace (messages + metadata) to a downloadable
@@ -136,7 +136,7 @@ finishing touch once the operational features above exist.
   records
 - Frontend: download trigger + file-picker with clear error states
 
-### Step 8 — Full Docker Compose (single-command startup)
+### Step 7 — Full Docker Compose (single-command startup)
 CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
 postgres, redis, and mailpit — isn't met yet; only the three infra services
 are containerized. Doing this once the backend module set is stable avoids
@@ -146,11 +146,11 @@ re-touching Dockerfiles per feature.
 - Update the README's "Running it locally" section to the new single-command
   flow (replacing the current "infra in Docker, apps locally" split)
 
-### Step 9 — Testing depth: integration + E2E
-Only unit tests exist today (billing's signature/idempotency/tier-derivation
-suite). CLAUDE.md wants unit + integration + E2E. Doing this after Steps
-1–8 means the suite covers the full, final feature set in one pass instead
-of needing a second one.
+### Step 8 — Testing depth: integration + E2E
+Only unit tests exist today (billing's and rate-limiting's suites). CLAUDE.md
+wants unit + integration + E2E. Doing this after Steps 1–7 means the suite
+covers the full, final feature set in one pass instead of needing a second
+one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -158,7 +158,7 @@ of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 10 — Production readiness (final stage)
+### Step 9 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
