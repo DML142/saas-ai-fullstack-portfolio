@@ -8,7 +8,11 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTooManyRequestsResponse } from '@nestjs/swagger';
+import {
+  ApiFoundResponse,
+  ApiOperation,
+  ApiTooManyRequestsResponse,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt.auth.guard';
@@ -22,6 +26,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RateLimit } from 'src/rate-limit/decorators/rate-limit.decorator';
 import { RateLimitGuard } from 'src/rate-limit/guards/rate-limit.guard';
+import { GoogleAuthGuard } from './guards/google.auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -168,5 +173,51 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({
+    summary: 'Start Google sign-in',
+    description:
+      'Redirects the browser to the Google OAuth consent screen. Must be ' +
+      'reached via a top-level navigation, not a fetch call.',
+  })
+  @ApiFoundResponse({
+    description: "Redirect to Google's consent screen.",
+  })
+  @Get('google')
+  googleAuth() {}
+
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({
+    summary: 'Google sign-in callback',
+    description:
+      'Google redirects back here after consent. On success, issues the ' +
+      'same access/refresh token pair as login/register, sets the refresh ' +
+      'cookie, and redirects to the frontend. On failure or denial, ' +
+      'redirects to the frontend login page with an error flag instead of ' +
+      'returning a raw error response.',
+  })
+  @ApiFoundResponse({
+    description:
+      'Redirect to the frontend — the app root on success, ' +
+      '/login?error=oauth_failed on failure.',
+  })
+  @Get('google/callback')
+  async googleCallback(
+    @Req() req: Request,
+    @Res({ passthrough: false }) res: Response,
+  ) {
+    const user = req.user as { userId: string; role: Role } | undefined;
+    if (!user) return;
+
+    const { refreshToken } = await this.authService.issueToken(
+      user.userId,
+      user.role,
+    );
+
+    this.setRefreshTokenCookie(res, refreshToken);
+
+    res.redirect(`${process.env.FRONTEND_URL}/`);
   }
 }

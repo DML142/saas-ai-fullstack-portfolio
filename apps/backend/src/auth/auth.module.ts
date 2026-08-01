@@ -9,6 +9,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from 'src/mail/mail.module';
 import { BillingModule } from 'src/billing/billing.module';
 import { RateLimitModule } from 'src/rate-limit/rate-limit.module';
+import { GoogleStrategy } from './google.strategy';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { RateLimitModule } from 'src/rate-limit/rate-limit.module';
     RateLimitModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
 })
 export class AuthModule {}

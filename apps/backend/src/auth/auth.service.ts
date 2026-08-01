@@ -170,7 +170,7 @@ export class AuthService {
       where: { email },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Email or password is wrong');
     }
 
@@ -276,5 +276,31 @@ export class AuthService {
     });
 
     await this.revokeAllSessions(userId);
+  }
+
+  async findOrCreateGoogleUser(googleId: string, email: string) {
+    const byGoogleId = await this.prisma.user.findUnique({
+      where: { googleId },
+      select: { id: true, role: true },
+    });
+    if (byGoogleId) return byGoogleId;
+
+    const byEmail = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (byEmail) {
+      return this.prisma.user.update({
+        where: { id: byEmail.id },
+        data: { googleId },
+        select: { id: true, role: true },
+      });
+    }
+
+    return this.prisma.user.create({
+      data: { email, googleId, emailVerified: true },
+      select: { id: true, role: true },
+    });
   }
 }

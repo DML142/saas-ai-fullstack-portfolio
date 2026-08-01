@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { PlanButton } from '@/components/pricing/PlanButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -134,6 +135,17 @@ export default function RegisterPage() {
         >
           Already have an account? Login
         </Link>
+      </div>
+
+      <div data-anim className="flex flex-col gap-5">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            or
+          </span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <GoogleAuthButton />
       </div>
     </form>
   );
