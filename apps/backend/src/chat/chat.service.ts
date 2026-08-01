@@ -1,13 +1,21 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { TIER_MESSAGE_LIMITS } from 'src/billing/billing.config';
+import { BillingService } from 'src/billing/billing.service';
 import { PrismaService } from 'src/PrismaService';
+import { RedisService } from 'src/redis/redis.service';
+import { getUsageKey } from './usage-key.util';
+
+const USAGE_WINDOW_SECONDS = 60 * 60 * 24 * 32; //32 days
 
 @Injectable()
 export class ChatService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('chat-reply') private replyQueue: Queue,
+    private billingService: BillingService,
+    private redisService: RedisService,
   ) {}
 
   async listWorkspaces(userId: string) {
@@ -71,7 +79,21 @@ export class ChatService {
     const message = await this.prisma.message.create({
       data: { workspaceId, role: 'USER', content },
     });
+    await this.redisService.incrementWithExpiry(
+      getUsageKey(userId),
+      USAGE_WINDOW_SECONDS,
+    );
     await this.replyQueue.add('generate-reply', { workspaceId, userId });
     return message;
+  }
+
+  async getUsage(userId: string) {
+    const tier = await this.billingService.getEffectiveTier(userId);
+    const limit = TIER_MESSAGE_LIMITS[tier];
+    const used = Number(
+      (await this.redisService.get(getUsageKey(userId))) ?? 0,
+    );
+
+    return { tier, used, limit };
   }
 }

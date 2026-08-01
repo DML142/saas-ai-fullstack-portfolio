@@ -41,20 +41,28 @@ composition) are understood, not just present.
 ## Highlights
 
 - **Auth** — JWT access + rotating refresh tokens, email verification, password
-  reset, all backed by Redis-tracked token families (replay/reuse detection)
+  reset, and Google OAuth (account-linking by verified email, so a password
+  account and a first-time Google sign-in with the same address merge instead
+  of duplicating) — all backed by Redis-tracked token families (replay/reuse
+  detection)
 - **RBAC** — `USER / PREMIUM / ADMIN` roles enforced via a `Roles` decorator + guard,
   kept as a separate axis from billing tier
 - **Stripe billing** — hosted Checkout + Billing Portal for monthly Lite/Pro/Ultra
   plans; Stripe is the source of truth, with a raw-body signature-verified,
   idempotent webhook handler as the only writer of subscription state
+- **Rate limiting** — Redis-backed fixed-window counter guarding the
+  credential/email-sending auth routes, fails open on a Redis outage rather
+  than locking everyone out
 - **Queues** — BullMQ-backed email delivery (verification, reset, billing
   notifications) and a simulated async chat-reply pipeline
 - **Realtime chat** — WebSocket gateway for live message delivery and job-completion
-  notifications, workspace-scoped
+  notifications, workspace-scoped, with a real tier-gated monthly message quota
+  (Redis-counted, fails open, `403` with a structured upgrade-prompt body)
 - **API docs** — full Swagger/OpenAPI spec generated from the live controllers
-- **Tested** — Jest unit tests for signature verification, idempotency, tier
-  derivation, and guard behavior; verified end-to-end against Stripe's real test
-  mode (not just mocked)
+- **Tested** — Jest unit tests across auth, billing, rate-limiting, and chat
+  (webhook signature verification, idempotency, tier derivation, guard
+  behavior); billing and OAuth verified end-to-end against Stripe/Google's
+  real test modes, not just mocked
 - **Design system** — a near-black / cosmic-purple landing page with a hero
   word-cycler, drifting `mix-blend-mode` stars, an SVG chromatic-aberration filter,
   and a GSAP-driven constellation — all hand-built, no off-the-shelf effect libs
@@ -131,9 +139,9 @@ saas-ai-portfolio/
 └─ turbo.json          # monorepo task graph
 ```
 
-Each backend feature (`auth`, `billing`, `chat`, `mail`, `redis`, `password`) is a
-self-contained Nest module: controller + service + DTOs + guards, wired through
-`app.module.ts`. `openspec/` holds the actual planning trail for major features —
+Each backend feature (`auth`, `billing`, `chat`, `mail`, `redis`, `password`,
+`rate-limit`) is a self-contained Nest module: controller + service + DTOs +
+guards, wired through `app.module.ts`. `openspec/` holds the actual planning trail for major features —
 proposal, design decisions and trade-offs, spec requirements, and task
 checklists — archived once implemented, so the *why* behind a feature is
 recoverable, not just the *what*.

@@ -7,6 +7,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { ChatReplyProcessor } from './chat-reply.processor';
 import { JwtModule } from '@nestjs/jwt';
 import { ChatGateway } from './chat.gateway';
+import { BillingModule } from 'src/billing/billing.module';
+import { RedisModule } from 'src/redis/redis.module';
+import { UsageLimitGuard } from './guards/usage-limit.guard';
 
 @Module({
   imports: [
@@ -14,8 +17,10 @@ import { ChatGateway } from './chat.gateway';
     PassportModule,
     BullModule.registerQueue({ name: 'chat-reply' }),
     JwtModule.register({}),
+    BillingModule,
+    RedisModule,
   ],
-  providers: [ChatService, ChatReplyProcessor, ChatGateway],
+  providers: [ChatService, ChatReplyProcessor, ChatGateway, UsageLimitGuard],
   controllers: [ChatController],
 })
 export class ChatModule {}

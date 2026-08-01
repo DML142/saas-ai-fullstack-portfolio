@@ -45,8 +45,10 @@ through OpenSpec when that step is actually picked up.
   status/product, exposed on `/auth/me`, login, and register
 - Duplicate-subscription guard — an already-subscribed user is redirected to
   the billing portal instead of creating a second Checkout session
-- `TierGuard` + `@MinTier` decorator exist, ready to gate routes by tier —
-  **not wired to anything yet** (see Step 1 below)
+- `TierGuard` + `@MinTier` decorator exist, ready to gate a route by a
+  minimum-tier check — **still not wired to anything**; chat's usage quota
+  (below) turned out to be a different shape of problem (counted/resetting,
+  not a static minimum) and reused the rate-limit counter instead
 - Swagger docs for all billing endpoints
 - Unit tests: signature verification, idempotency, tier derivation,
   duplicate-subscription guard — verified live against Stripe test mode
@@ -55,6 +57,23 @@ through OpenSpec when that step is actually picked up.
 - Per-user workspace + message persistence
 - Simulated reply pipeline: BullMQ job + real-time delivery over WebSocket
 - Markdown rendering with syntax-highlighted code blocks
+- Tier-gated monthly message quota: a Redis fixed-window counter
+  (`usage:messages:<userId>:<YYYY-MM>`, reusing
+  `RedisService.incrementWithExpiry`) checked by `UsageLimitGuard` on send
+  and incremented only after a message is actually created — a rejected
+  attempt never counts against the quota; `ULTRA` maps to `null` (no limit)
+  in `TIER_MESSAGE_LIMITS`; over-quota sends get a `403` with a structured
+  `{ message, tier, limit, used }` body instead of a bare status code; the
+  check fails open on a Redis error (an outage shouldn't lock out chat
+  entirely)
+- `GET /chat/usage` exposes real `{ tier, used, limit }`; `UsageSummary` in
+  the dashboard renders it live (an "Unlimited" state for `ULTRA`), and a
+  blocked send in `ChatPanel` shows an inline "upgrade your plan" link
+  instead of a generic error
+- Swagger docs for the usage endpoint and the `403` quota response; unit
+  tests for the guard and the increment-on-send behavior — verified live:
+  bulk-sent a FREE test account to exactly `50/50`, confirmed the 51st send
+  returned `403` and the frontend upgrade prompt rendered
 
 ### Frontend
 - Landing page: hero (word-cycler, drifting blend-mode stars, scoped
@@ -79,7 +98,7 @@ through OpenSpec when that step is actually picked up.
 
 ### Infra & tooling
 - Docker Compose for local dev: Postgres, Redis, Mailpit
-  (infra services only — app containers are not part of this yet, see Step 6)
+  (infra services only — app containers are not part of this yet, see Step 5)
 - pnpm workspaces + Turborepo monorepo
 - GitHub Actions CI: lint + test + build for both apps, on every push/PR to
   `main`
@@ -91,18 +110,7 @@ through OpenSpec when that step is actually picked up.
 
 ## Next — step by step, to final stage
 
-### Step 1 — Tier-gated usage limits (chat)
-Enforce real per-tier limits using the `TierGuard`/`@MinTier` machinery that
-already exists but currently gates nothing. Right now a FREE and an ULTRA
-account behave identically once logged in, which makes the billing feature
-functionally pointless — this is what closes that loop.
-- Redis-backed usage counter (e.g. messages this period, `INCR` + TTL per
-  user per billing period)
-- Guard/interceptor on the chat message-send path enforcing the limit
-- Real numbers in `UsageSummary` (currently static placeholder data)
-- Friendly "upgrade to send more" UX when a limit is hit, not just a bare 429
-
-### Step 2 — File uploads (avatar)
+### Step 1 — File uploads (avatar)
 Smallest of the three upload targets CLAUDE.md lists (avatar / documents /
 images) — start here to establish the pattern once, cleanly.
 - Multer-based upload endpoint, size + MIME-type validation
@@ -110,7 +118,7 @@ images) — start here to establish the pattern once, cleanly.
   concern to swap in later (don't build it now)
 - `avatarUrl` on `User`, frontend upload control in Settings
 
-### Step 3 — Cron jobs
+### Step 2 — Cron jobs
 Natural follow-on once uploads exist (there's something to actually clean
 up), and a clean `@nestjs/schedule` learning piece on its own.
 - `@nestjs/schedule` wired into a small `CronModule`
@@ -119,10 +127,10 @@ up), and a clean `@nestjs/schedule` learning piece on its own.
   Redis TTL — this is for whatever doesn't)
 - Logging/observability for job runs (success/failure, duration)
 
-### Step 4 — Admin panel
-The biggest single feature left. Deliberately placed after Steps 1–3
-so there's something real to administer (usage limits, uploaded files,
-scheduled jobs) rather than an empty shell.
+### Step 3 — Admin panel
+The biggest single feature left. Deliberately placed after Steps 1–2
+so there's something real to administer (uploaded files, scheduled jobs —
+usage limits are already shipped) rather than an empty shell.
 - Backend `admin` module, gated by `@Roles(Role.ADMIN)`
 - Users: list, view, change role
 - Subscriptions: list, view, cancel (via Stripe, synced back through the
@@ -133,7 +141,7 @@ scheduled jobs) rather than an empty shell.
 - Frontend `/admin` route tree: its own layout, tables, confirmation modals
   for destructive actions
 
-### Step 5 — Import / export chat workspace
+### Step 4 — Import / export chat workspace
 Smaller, self-contained UI feature from the original feature list — a good
 finishing touch once the operational features above exist.
 - Backend: serialize a workspace (messages + metadata) to a downloadable
@@ -142,7 +150,7 @@ finishing touch once the operational features above exist.
   records
 - Frontend: download trigger + file-picker with clear error states
 
-### Step 6 — Full Docker Compose (single-command startup)
+### Step 5 — Full Docker Compose (single-command startup)
 CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
 postgres, redis, and mailpit — isn't met yet; only the three infra services
 are containerized. Doing this once the backend module set is stable avoids
@@ -152,11 +160,11 @@ re-touching Dockerfiles per feature.
 - Update the README's "Running it locally" section to the new single-command
   flow (replacing the current "infra in Docker, apps locally" split)
 
-### Step 7 — Testing depth: integration + E2E
-Only unit tests exist today (billing's, rate-limiting's, and Google
-OAuth's suites). CLAUDE.md wants unit + integration + E2E. Doing this after
-Steps 1–6 means the suite covers the full, final feature set in one pass
-instead of needing a second one.
+### Step 6 — Testing depth: integration + E2E
+Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
+and chat usage-limits' suites). CLAUDE.md wants unit + integration + E2E.
+Doing this after Steps 1–5 means the suite covers the full, final feature
+set in one pass instead of needing a second one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -164,7 +172,7 @@ instead of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 8 — Production readiness (final stage)
+### Step 7 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
