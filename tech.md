@@ -105,6 +105,29 @@ through OpenSpec when that step is actually picked up.
   the popup to the top-left corner — fixed by rendering `AvatarMenu` once,
   always visible, instead of duplicating it per breakpoint
 
+### Cron jobs
+- `@nestjs/schedule` wired via a global `ScheduleModule.forRoot()`; a new
+  `CronModule` (no controller — internal-only) declares two `@Cron`-decorated
+  services, each on its own daily schedule (configured via `CRON_*` env vars,
+  `process.env`-direct with safe defaults, same pattern as
+  `avatar-upload.config.ts`)
+- `AvatarCleanupService`: diffs on-disk files under `AVATAR_UPLOAD_DIR`
+  against every `User.avatarUrl` in Postgres, deletes anything unreferenced
+  — but only past a 10-minute grace period (by file `mtime`), since the
+  upload write and the DB update aren't transactional and a brand-new file
+  can briefly have no matching row yet
+- `WebhookEventCleanupService`: deletes `ProcessedWebhookEvent` rows older
+  than a configurable retention window (`CRON_WEBHOOK_EVENT_RETENTION_DAYS`,
+  default 30 days — well past Stripe's actual webhook retry window)
+- Both jobs log start/success (with duration + item count)/failure via the
+  existing per-class `new Logger(ClassName.name)` convention; failures are
+  caught and logged, not thrown — `@nestjs/schedule` has no retry mechanism
+  like BullMQ, so a failed run just waits for its next scheduled tick
+- Unit tests for both services (success/no-op/grace-period/error-swallowed
+  paths); verified live against real dev data — a synthetic orphaned file
+  and a backdated `ProcessedWebhookEvent` row were both deleted on a real
+  run, while a genuinely-referenced avatar and a recent event row survived
+
 ### Frontend
 - Landing page: hero (word-cycler, drifting blend-mode stars, scoped
   chromatic aberration), features (constellation + feature-stars), social
@@ -128,7 +151,7 @@ through OpenSpec when that step is actually picked up.
 
 ### Infra & tooling
 - Docker Compose for local dev: Postgres, Redis, Mailpit
-  (infra services only — app containers are not part of this yet, see Step 4)
+  (infra services only — app containers are not part of this yet, see Step 3)
 - pnpm workspaces + Turborepo monorepo
 - GitHub Actions CI: lint + test + build for both apps, on every push/PR to
   `main`
@@ -140,17 +163,8 @@ through OpenSpec when that step is actually picked up.
 
 ## Next — step by step, to final stage
 
-### Step 1 — Cron jobs
-Natural follow-on now that uploads exist (there's something to actually
-clean up), and a clean `@nestjs/schedule` learning piece on its own.
-- `@nestjs/schedule` wired into a small `CronModule`
-- Cleanup job for orphaned/expired uploaded files
-- Cleanup job for any non-TTL'd stale state (most tokens already expire via
-  Redis TTL — this is for whatever doesn't)
-- Logging/observability for job runs (success/failure, duration)
-
-### Step 2 — Admin panel
-The biggest single feature left. Deliberately placed after Step 1 so
+### Step 1 — Admin panel
+The biggest single feature left. Deliberately placed after cron jobs so
 there's something real to administer (scheduled jobs — uploaded files and
 usage limits are already shipped) rather than an empty shell.
 - Backend `admin` module, gated by `@Roles(Role.ADMIN)`
@@ -163,7 +177,7 @@ usage limits are already shipped) rather than an empty shell.
 - Frontend `/admin` route tree: its own layout, tables, confirmation modals
   for destructive actions
 
-### Step 3 — Import / export chat workspace
+### Step 2 — Import / export chat workspace
 Smaller, self-contained UI feature from the original feature list — a good
 finishing touch once the operational features above exist.
 - Backend: serialize a workspace (messages + metadata) to a downloadable
@@ -172,7 +186,7 @@ finishing touch once the operational features above exist.
   records
 - Frontend: download trigger + file-picker with clear error states
 
-### Step 4 — Full Docker Compose (single-command startup)
+### Step 3 — Full Docker Compose (single-command startup)
 CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
 postgres, redis, and mailpit — isn't met yet; only the three infra services
 are containerized. Doing this once the backend module set is stable avoids
@@ -182,11 +196,11 @@ re-touching Dockerfiles per feature.
 - Update the README's "Running it locally" section to the new single-command
   flow (replacing the current "infra in Docker, apps locally" split)
 
-### Step 5 — Testing depth: integration + E2E
+### Step 4 — Testing depth: integration + E2E
 Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
-chat usage-limits', and avatar upload's suites). CLAUDE.md wants unit +
-integration + E2E. Doing this after Steps 1–4 means the suite covers the
-full, final feature set in one pass instead of needing a second one.
+chat usage-limits', avatar upload's, and cron jobs' suites). CLAUDE.md wants
+unit + integration + E2E. Doing this after Steps 1–3 means the suite covers
+the full, final feature set in one pass instead of needing a second one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -194,7 +208,7 @@ full, final feature set in one pass instead of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 6 — Production readiness (final stage)
+### Step 5 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
