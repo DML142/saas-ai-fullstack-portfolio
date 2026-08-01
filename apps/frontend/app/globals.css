@@ -137,4 +137,21 @@
   html {
     @apply font-sans;
   }
+
+  /* Chrome/Edge/Safari paint autofilled inputs with their own opaque white
+     background + black text via an internal UA style that a normal
+     background-color can't override. The fix is this inset-shadow trick
+     (it paints over the UA fill instead of competing with it) plus a very
+     long background-color transition, which is the standard way to stop
+     that fill from flashing in before the shadow applies. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--color-ink);
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-bg) inset;
+    box-shadow: 0 0 0px 1000px var(--color-bg) inset;
+    caret-color: var(--color-ink);
+    transition: background-color 5000s ease-in-out 0s;
+  }
 }

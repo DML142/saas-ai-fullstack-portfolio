@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { PlanButton } from '@/components/pricing/PlanButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
 
@@ -22,10 +23,15 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
+  const oauthFailed = useSearchParams().get('error') === 'oauth_failed';
   const setSession = useAuthStore((s) => s.setSession);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(
+    oauthFailed
+      ? 'Google sign-in failed or was cancelled. Try again, or use your email and password.'
+      : null,
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const reducedMotion = useReducedMotion();
 
@@ -142,6 +148,25 @@ export default function LoginPage() {
           Don&apos;t have an account? Register
         </Link>
       </div>
+
+      <div data-anim className="flex flex-col gap-5">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            or
+          </span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <GoogleAuthButton />
+      </div>
     </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-ink/70">Loading...</p>}>
+      <LoginInner />
+    </Suspense>
   );
 }
