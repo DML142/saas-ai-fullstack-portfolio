@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { AvatarMenu } from '@/components/AvatarMenu';
 
 /** Email stands in for a display name — the `User` model has no `name`
  * field, same substitution `useAuth()` already makes for the Navbar. */
@@ -23,13 +23,8 @@ export function AccountBadge() {
           </span>
         )}
       </div>
-      <Image
-        src="/userico.png"
-        alt="User avatar"
-        width={28}
-        height={28}
-        className="rounded-full"
-      />
+
+      <AvatarMenu />
     </div>
   );
 }

@@ -38,6 +38,7 @@ model User {
   passwordHash String?
   googleId String? @unique
   role Role @default(USER)
+  avatarUrl String?
   workspaces Workspace[]
   stripeCustomerId String? @unique
   subscription Subscription?
