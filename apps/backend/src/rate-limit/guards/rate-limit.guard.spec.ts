@@ -49,7 +49,10 @@ describe('RateLimitGuard', () => {
   });
 
   it('allows the request through when the count is within the limit', async () => {
-    reflector.getAllAndOverride.mockReturnValue({ limit: 5, windowSeconds: 60 });
+    reflector.getAllAndOverride.mockReturnValue({
+      limit: 5,
+      windowSeconds: 60,
+    });
     redis.incrementWithExpiry.mockResolvedValue(3);
 
     const allowed = await guard.canActivate(makeContext('1.1.1.1'));
@@ -58,19 +61,27 @@ describe('RateLimitGuard', () => {
   });
 
   it('rejects with 429 once the count exceeds the limit', async () => {
-    reflector.getAllAndOverride.mockReturnValue({ limit: 5, windowSeconds: 60 });
+    reflector.getAllAndOverride.mockReturnValue({
+      limit: 5,
+      windowSeconds: 60,
+    });
     redis.incrementWithExpiry.mockResolvedValue(6);
 
-    await expect(guard.canActivate(makeContext('1.1.1.1'))).rejects.toBeInstanceOf(
-      HttpException,
-    );
+    await expect(
+      guard.canActivate(makeContext('1.1.1.1')),
+    ).rejects.toBeInstanceOf(HttpException);
   });
 
   it('sets a Retry-After header equal to the configured window when rejecting', async () => {
-    reflector.getAllAndOverride.mockReturnValue({ limit: 5, windowSeconds: 60 });
+    reflector.getAllAndOverride.mockReturnValue({
+      limit: 5,
+      windowSeconds: 60,
+    });
     redis.incrementWithExpiry.mockResolvedValue(6);
     const context = makeContext('1.1.1.1');
-    const response = context.switchToHttp().getResponse<{ setHeader: jest.Mock }>();
+    const response = context
+      .switchToHttp()
+      .getResponse<{ setHeader: jest.Mock }>();
 
     await expect(guard.canActivate(context)).rejects.toThrow();
 
@@ -78,21 +89,33 @@ describe('RateLimitGuard', () => {
   });
 
   it('tracks distinct IPs independently under the same route key', async () => {
-    reflector.getAllAndOverride.mockReturnValue({ limit: 5, windowSeconds: 60 });
+    reflector.getAllAndOverride.mockReturnValue({
+      limit: 5,
+      windowSeconds: 60,
+    });
     redis.incrementWithExpiry.mockResolvedValue(1);
 
     await guard.canActivate(makeContext('1.1.1.1'));
     await guard.canActivate(makeContext('2.2.2.2'));
 
-    const [firstKey] = redis.incrementWithExpiry.mock.calls[0] as [string, number];
-    const [secondKey] = redis.incrementWithExpiry.mock.calls[1] as [string, number];
+    const [firstKey] = redis.incrementWithExpiry.mock.calls[0] as [
+      string,
+      number,
+    ];
+    const [secondKey] = redis.incrementWithExpiry.mock.calls[1] as [
+      string,
+      number,
+    ];
     expect(firstKey).not.toBe(secondKey);
     expect(firstKey).toContain('1.1.1.1');
     expect(secondKey).toContain('2.2.2.2');
   });
 
   it('fails open when the Redis counter is unavailable', async () => {
-    reflector.getAllAndOverride.mockReturnValue({ limit: 5, windowSeconds: 60 });
+    reflector.getAllAndOverride.mockReturnValue({
+      limit: 5,
+      windowSeconds: 60,
+    });
     redis.incrementWithExpiry.mockResolvedValue(null);
 
     const allowed = await guard.canActivate(makeContext('1.1.1.1'));
@@ -101,7 +124,10 @@ describe('RateLimitGuard', () => {
   });
 
   it('reads metadata under the RATE_LIMIT_KEY from both handler and class', async () => {
-    reflector.getAllAndOverride.mockReturnValue({ limit: 5, windowSeconds: 60 });
+    reflector.getAllAndOverride.mockReturnValue({
+      limit: 5,
+      windowSeconds: 60,
+    });
     redis.incrementWithExpiry.mockResolvedValue(1);
     const context = makeContext('1.1.1.1');
 
