@@ -25,3 +25,10 @@ export const TIER_RANK: Record<SubscriptionTier, number> = {
   PRO: 2,
   ULTRA: 3,
 };
+
+export const TIER_MESSAGE_LIMITS: Record<SubscriptionTier, number | null> = {
+  FREE: 50,
+  LITE: 500,
+  PRO: 2000,
+  ULTRA: null,
+};

@@ -16,6 +16,30 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface Usage {
+  tier: 'FREE' | 'LITE' | 'PRO' | 'ULTRA';
+  used: number;
+  limit: number | null;
+}
+
+/** Shape of the 403 body UsageLimitGuard sends once the tier's quota is hit. */
+interface UsageLimitBody extends Usage {
+  message: string;
+}
+
+export class UsageLimitError extends Error {
+  tier: Usage['tier'];
+  limit: number | null;
+  used: number;
+
+  constructor(body: UsageLimitBody) {
+    super(body.message);
+    this.tier = body.tier;
+    this.limit = body.limit;
+    this.used = body.used;
+  }
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 function chatAuthFetch(url: string, init: RequestInit) {
@@ -90,6 +114,16 @@ export async function sendMessage(
       body: JSON.stringify({ content }),
     },
   );
+  if (res.status === 403) {
+    const body = (await res.json().catch(() => null)) as UsageLimitBody | null;
+    if (body?.tier) throw new UsageLimitError(body);
+  }
   if (!res.ok) throw new Error('Failed to send message');
+  return res.json();
+}
+
+export async function getUsage(): Promise<Usage> {
+  const res = await chatAuthFetch(`${API_URL}/chat/usage`, { method: 'GET' });
+  if (!res.ok) throw new Error('Failed to load usage');
   return res.json();
 }

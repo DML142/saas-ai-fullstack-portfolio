@@ -10,12 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { ApiForbiddenResponse, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 import { ChatService } from './chat.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { Role } from 'generated/prisma/enums';
 import { updateWorkspaceDto } from './dto/update_workspace.dto';
+import { UsageLimitGuard } from './guards/usage-limit.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
@@ -56,6 +58,24 @@ export class ChatController {
     return this.chatService.getMessages(user.userId, workspaceId);
   }
 
+  @ApiOperation({
+    summary: 'Get current usage',
+    description:
+      "Returns the caller's message count for the current calendar month, " +
+      "their effective tier, and that tier's monthly limit (null for ULTRA).",
+  })
+  @Get('usage')
+  getUsage(@Req() req: Request) {
+    const user = req.user as { userId: string; role: Role };
+    return this.chatService.getUsage(user.userId);
+  }
+
+  @UseGuards(UsageLimitGuard)
+  @ApiForbiddenResponse({
+    description:
+      "Monthly message quota reached for the caller's tier — response body " +
+      'includes { message, tier, limit, used } for an "upgrade to send more" UI.',
+  })
   @Post('workspaces/:id/messages')
   sendMesseage(
     @Req() req: Request,

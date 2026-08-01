@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageSquare } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWorkspaceStore } from '@/lib/stores/workspace.store';
@@ -8,7 +9,12 @@ import { useMessageStore } from '@/lib/stores/message.store';
 import { DashboardHeader } from './DashboardHeader';
 import { MessageBubble } from './MessageBubble';
 import { useEffect, useRef, useState } from 'react';
-import { getMessages, sendMessage, type ChatMessage } from '@/lib/stores/chat';
+import {
+  getMessages,
+  sendMessage,
+  UsageLimitError,
+  type ChatMessage,
+} from '@/lib/stores/chat';
 
 // One shared reference for the "no messages" case, so `messages` stays a
 // stable dependency for the auto-scroll effect (a fresh `[]` each render
@@ -33,6 +39,7 @@ export function ChatPanel() {
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
 
   // Keep the newest message in view — on send, on reply, and while "typing…".
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -65,11 +72,13 @@ export function ChatPanel() {
     const content = input.trim();
     if (!content || !activeId || sending) return;
     setSending(true);
+    setLimitReached(false);
     try {
       const message = await sendMessage(activeId, content);
       useMessageStore.getState().addMessage(message);
       setInput('');
-    } catch {
+    } catch (err) {
+      if (err instanceof UsageLimitError) setLimitReached(true);
     } finally {
       setSending(false);
     }
@@ -125,6 +134,7 @@ export function ChatPanel() {
             placeholder={
               isPending ? 'Waiting for reply…' : 'Enter message here.'
             }
+            autoComplete="off"
             className="flex-1"
           />
           <Button
@@ -136,9 +146,22 @@ export function ChatPanel() {
             Send
           </Button>
         </form>
-        <p className="mt-2 text-center text-xs text-foreground/40">
-          Replies are simulated — COS Assistant isn&apos;t a real AI model.
-        </p>
+        {limitReached ? (
+          <p className="mt-2 text-center text-xs text-destructive">
+            You&apos;ve hit this month&apos;s message limit.{' '}
+            <Link
+              href="/#pricing"
+              className="underline decoration-destructive/40 underline-offset-4 hover:decoration-destructive/80"
+            >
+              Upgrade your plan
+            </Link>{' '}
+            to send more.
+          </p>
+        ) : (
+          <p className="mt-2 text-center text-xs text-foreground/40">
+            Replies are simulated — COS Assistant isn&apos;t a real AI model.
+          </p>
+        )}
       </div>
     </div>
   );
