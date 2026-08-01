@@ -75,6 +75,36 @@ through OpenSpec when that step is actually picked up.
   bulk-sent a FREE test account to exactly `50/50`, confirmed the 51st send
   returned `403` and the frontend upgrade prompt rendered
 
+### File uploads (avatar)
+- New `users` module (first module outside `auth` to own user data):
+  `POST /users/me/avatar` / `DELETE /users/me/avatar`, JWT-guarded
+- Multer memory storage (not `diskStorage`) + `ParseFilePipe`
+  (`FileTypeValidator` magic-number check, `MaxFileSizeValidator`) —
+  validates the buffer before anything touches disk, so a rejected upload
+  never partially writes a file
+- Local disk storage under `AVATAR_UPLOAD_DIR` (env-configured), served via
+  `ServeStaticModule`; `avatarUrl String?` added to `User`, wired into
+  `/auth/me`, login, and register
+- Replacing an avatar deletes the old file; removing clears `avatarUrl` and
+  deletes the file (no-op if already unset)
+- Frontend: shared `AvatarMenu` popover (click the avatar icon → upload/
+  delete controls, plus a bigger avatar preview + email when one is set)
+  used by both the dashboard header (`AccountBadge`) and the public Navbar
+  — same account, same avatar, wherever the user is logged in
+- Swagger docs; unit tests for `UsersService` (upload/replace/remove/
+  not-found/ENOENT-is-success) and a controller test — verified live via
+  curl plus a synthetic `DataTransfer`-driven file upload in-browser (the
+  sandbox can't drive a native OS file picker)
+- Two bugs found and fixed along the way, worth remembering: (1)
+  `ServeStaticModule`'s `serveRoot` needs its leading slash or Express's
+  static middleware silently never matches any route (a missing file
+  looked like a CORS/ORB error in the browser, not a routing error); (2)
+  rendering the same Popover-based avatar trigger twice across a CSS-only
+  responsive breakpoint (`hidden md:flex` / `md:hidden`) makes Floating UI
+  anchor to a zero-rect hidden element on the breakpoint flip, teleporting
+  the popup to the top-left corner — fixed by rendering `AvatarMenu` once,
+  always visible, instead of duplicating it per breakpoint
+
 ### Frontend
 - Landing page: hero (word-cycler, drifting blend-mode stars, scoped
   chromatic aberration), features (constellation + feature-stars), social
@@ -98,7 +128,7 @@ through OpenSpec when that step is actually picked up.
 
 ### Infra & tooling
 - Docker Compose for local dev: Postgres, Redis, Mailpit
-  (infra services only — app containers are not part of this yet, see Step 5)
+  (infra services only — app containers are not part of this yet, see Step 4)
 - pnpm workspaces + Turborepo monorepo
 - GitHub Actions CI: lint + test + build for both apps, on every push/PR to
   `main`
@@ -110,26 +140,18 @@ through OpenSpec when that step is actually picked up.
 
 ## Next — step by step, to final stage
 
-### Step 1 — File uploads (avatar)
-Smallest of the three upload targets CLAUDE.md lists (avatar / documents /
-images) — start here to establish the pattern once, cleanly.
-- Multer-based upload endpoint, size + MIME-type validation
-- Storage: local disk for dev; note S3-compatible storage as the prod
-  concern to swap in later (don't build it now)
-- `avatarUrl` on `User`, frontend upload control in Settings
-
-### Step 2 — Cron jobs
-Natural follow-on once uploads exist (there's something to actually clean
-up), and a clean `@nestjs/schedule` learning piece on its own.
+### Step 1 — Cron jobs
+Natural follow-on now that uploads exist (there's something to actually
+clean up), and a clean `@nestjs/schedule` learning piece on its own.
 - `@nestjs/schedule` wired into a small `CronModule`
 - Cleanup job for orphaned/expired uploaded files
 - Cleanup job for any non-TTL'd stale state (most tokens already expire via
   Redis TTL — this is for whatever doesn't)
 - Logging/observability for job runs (success/failure, duration)
 
-### Step 3 — Admin panel
-The biggest single feature left. Deliberately placed after Steps 1–2
-so there's something real to administer (uploaded files, scheduled jobs —
+### Step 2 — Admin panel
+The biggest single feature left. Deliberately placed after Step 1 so
+there's something real to administer (scheduled jobs — uploaded files and
 usage limits are already shipped) rather than an empty shell.
 - Backend `admin` module, gated by `@Roles(Role.ADMIN)`
 - Users: list, view, change role
@@ -141,7 +163,7 @@ usage limits are already shipped) rather than an empty shell.
 - Frontend `/admin` route tree: its own layout, tables, confirmation modals
   for destructive actions
 
-### Step 4 — Import / export chat workspace
+### Step 3 — Import / export chat workspace
 Smaller, self-contained UI feature from the original feature list — a good
 finishing touch once the operational features above exist.
 - Backend: serialize a workspace (messages + metadata) to a downloadable
@@ -150,7 +172,7 @@ finishing touch once the operational features above exist.
   records
 - Frontend: download trigger + file-picker with clear error states
 
-### Step 5 — Full Docker Compose (single-command startup)
+### Step 4 — Full Docker Compose (single-command startup)
 CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
 postgres, redis, and mailpit — isn't met yet; only the three infra services
 are containerized. Doing this once the backend module set is stable avoids
@@ -160,11 +182,11 @@ re-touching Dockerfiles per feature.
 - Update the README's "Running it locally" section to the new single-command
   flow (replacing the current "infra in Docker, apps locally" split)
 
-### Step 6 — Testing depth: integration + E2E
+### Step 5 — Testing depth: integration + E2E
 Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
-and chat usage-limits' suites). CLAUDE.md wants unit + integration + E2E.
-Doing this after Steps 1–5 means the suite covers the full, final feature
-set in one pass instead of needing a second one.
+chat usage-limits', and avatar upload's suites). CLAUDE.md wants unit +
+integration + E2E. Doing this after Steps 1–4 means the suite covers the
+full, final feature set in one pass instead of needing a second one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -172,7 +194,7 @@ set in one pass instead of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 7 — Production readiness (final stage)
+### Step 6 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
