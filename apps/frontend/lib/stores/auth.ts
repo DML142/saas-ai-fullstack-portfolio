@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export interface AuthUser {
   id: string;
@@ -6,6 +7,7 @@ export interface AuthUser {
   emailVerified: boolean;
   role: 'USER' | 'PREMIUM' | 'ADMIN';
   tier: SubscriptionTier;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +49,39 @@ export async function openBillingPortal(
   const res = await authFetch(
     `${API_URL}/billing/portal`,
     { method: 'POST' },
+    getToken,
+    onRefreshed,
+    onSessionLost,
+  );
+  return parseOrThrow(res);
+}
+
+export async function uploadAvatar(
+  file: File,
+  getToken: () => string | null,
+  onRefreshed: (session: { accessToken: string; user: AuthUser }) => void,
+  onSessionLost: () => void,
+): Promise<{ avatarUrl: string }> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  const res = await authFetch(
+    `${API_URL}/users/me/avatar`,
+    { method: 'POST', body: formData },
+    getToken,
+    onRefreshed,
+    onSessionLost,
+  );
+  return parseOrThrow(res);
+}
+
+export async function removeAvatar(
+  getToken: () => string | null,
+  onRefreshed: (session: { accessToken: string; user: AuthUser }) => void,
+  onSessionLost: () => void,
+): Promise<{ avatarUrl: null }> {
+  const res = await authFetch(
+    `${API_URL}/users/me/avatar`,
+    { method: 'DELETE' },
     getToken,
     onRefreshed,
     onSessionLost,

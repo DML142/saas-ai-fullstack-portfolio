@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AvatarMenu } from '@/components/AvatarMenu';
 import { useAuth } from '@/hooks/useAuth';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useSmoothAnchor } from '@/hooks/useSmoothAnchor';
@@ -52,7 +53,7 @@ export function Navbar() {
           <Link href="/" className="shrink-0">
             <Image src="/cosico.png" alt="COS Code" width={60} height={60} />
           </Link>
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav className="hidden items-center gap-6 lg:flex">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -66,26 +67,35 @@ export function Navbar() {
           </nav>
         </div>
 
-        {/* right: auth-conditional controls (desktop) */}
-        <div className="hidden items-center gap-4 md:flex">
-          <AuthControls isLoggedIn={isLoggedIn} userName={user?.name} />
-        </div>
+        {/* right: auth-conditional controls + avatar + mobile hamburger.
+            `AvatarMenu` renders once here (not duplicated per breakpoint
+            like `AuthControls` below) because its Popover anchors to the
+            trigger's bounding rect via Floating UI — a duplicate copy
+            hidden by `lg:hidden`/`hidden lg:flex` would collapse to a
+            zero rect on the CSS breakpoint flip and make the popup jump
+            to the top-left corner instead of just disappearing. */}
+        <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-4 lg:flex">
+            <AuthControls isLoggedIn={isLoggedIn} userName={user?.name} />
+          </div>
 
-        {/* mobile hamburger toggle */}
-        <button
-          type="button"
-          onClick={() => setMobileOpen((open) => !open)}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-          className="text-foreground md:hidden"
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+          {isLoggedIn && <AvatarMenu size={28} />}
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            className="text-foreground lg:hidden"
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {/* mobile menu panel — always mounted so the transition has a "before"
           state; `absolute` keeps it out of flow while closed. */}
       <div
-        className={`absolute inset-x-0 top-full border-t border-border bg-bg/95 backdrop-blur-md transition-all duration-300 md:hidden ${
+        className={`absolute inset-x-0 top-full border-t border-border bg-bg/95 backdrop-blur-md transition-all duration-300 lg:hidden ${
           mobileOpen
             ? 'translate-y-0 opacity-100'
             : 'pointer-events-none -translate-y-2 opacity-0'
@@ -176,14 +186,6 @@ function AuthControls({
       {isLoggedIn && userName && (
         <span className="text-sm text-foreground/80">{userName}</span>
       )}
-
-      <Image
-        src="/userico.png"
-        alt="User avatar"
-        width={28}
-        height={28}
-        className="rounded-full"
-      />
     </>
   );
 }
