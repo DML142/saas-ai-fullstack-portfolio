@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { PrismaService } from 'src/PrismaService';
 import { MailService } from 'src/mail/mail.service';
@@ -13,6 +13,7 @@ describe('BillingService', () => {
     checkout: { sessions: { create: jest.Mock } };
     billingPortal: { sessions: { create: jest.Mock } };
     customers: { create: jest.Mock };
+    subscriptions: { update: jest.Mock };
   };
   let prisma: {
     subscription: { findUnique: jest.Mock; upsert: jest.Mock };
@@ -32,6 +33,7 @@ describe('BillingService', () => {
       checkout: { sessions: { create: jest.fn() } },
       billingPortal: { sessions: { create: jest.fn() } },
       customers: { create: jest.fn() },
+      subscriptions: { update: jest.fn() },
     };
     prisma = {
       subscription: { findUnique: jest.fn(), upsert: jest.fn() },
@@ -176,6 +178,30 @@ describe('BillingService', () => {
     it('returns FREE when there is no subscription', async () => {
       prisma.subscription.findUnique.mockResolvedValue(null);
       expect(await service.getEffectiveTier('u1')).toBe(SubscriptionTier.FREE);
+    });
+  });
+
+  describe('cancelSubscription', () => {
+    it('cancels at period end via Stripe without writing the DB directly', async () => {
+      prisma.subscription.findUnique.mockResolvedValue({
+        stripeSubscriptionId: 'sub_123',
+      });
+
+      await service.cancelSubscription('u1');
+
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_123', {
+        cancel_at_period_end: true,
+      });
+      expect(prisma.subscription.upsert).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when the user has no subscription', async () => {
+      prisma.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(service.cancelSubscription('u1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(stripe.subscriptions.update).not.toHaveBeenCalled();
     });
   });
 });

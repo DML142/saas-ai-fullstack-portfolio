@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/stores/auth.store';
 import { useWorkspaceStore } from '@/lib/stores/workspace.store';
 import { useDashboardUiStore } from '@/lib/stores/dashboard-ui.store';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -27,6 +28,7 @@ const MOBILE_QUERY = '(max-width: 767px)';
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const role = useAuthStore((s) => s.user?.role);
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeId = useWorkspaceStore((s) => s.activeId);
   const status = useWorkspaceStore((s) => s.status);
@@ -200,6 +202,14 @@ export function Sidebar() {
         </nav>
 
         <div className="mt-auto border-t border-border/60 pt-4">
+          {role === 'ADMIN' && (
+            <Link
+              href="/admin"
+              className="mb-1 block rounded-lg px-3 py-2 text-sm text-foreground/70 transition-colors hover:bg-card/20 hover:text-ink"
+            >
+              Admin
+            </Link>
+          )}
           <Link
             href="/dashboard/settings"
             onClick={closeSidebar}

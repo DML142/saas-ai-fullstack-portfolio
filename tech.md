@@ -105,6 +105,75 @@ through OpenSpec when that step is actually picked up.
   the popup to the top-left corner — fixed by rendering `AvatarMenu` once,
   always visible, instead of duplicating it per breakpoint
 
+### Cron jobs
+- `@nestjs/schedule` wired via a global `ScheduleModule.forRoot()`; a new
+  `CronModule` (no controller — internal-only) declares two `@Cron`-decorated
+  services, each on its own daily schedule (configured via `CRON_*` env vars,
+  `process.env`-direct with safe defaults, same pattern as
+  `avatar-upload.config.ts`)
+- `AvatarCleanupService`: diffs on-disk files under `AVATAR_UPLOAD_DIR`
+  against every `User.avatarUrl` in Postgres, deletes anything unreferenced
+  — but only past a 10-minute grace period (by file `mtime`), since the
+  upload write and the DB update aren't transactional and a brand-new file
+  can briefly have no matching row yet
+- `WebhookEventCleanupService`: deletes `ProcessedWebhookEvent` rows older
+  than a configurable retention window (`CRON_WEBHOOK_EVENT_RETENTION_DAYS`,
+  default 30 days — well past Stripe's actual webhook retry window)
+- Both jobs log start/success (with duration + item count)/failure via the
+  existing per-class `new Logger(ClassName.name)` convention; failures are
+  caught and logged, not thrown — `@nestjs/schedule` has no retry mechanism
+  like BullMQ, so a failed run just waits for its next scheduled tick
+- Unit tests for both services (success/no-op/grace-period/error-swallowed
+  paths); verified live against real dev data — a synthetic orphaned file
+  and a backdated `ProcessedWebhookEvent` row were both deleted on a real
+  run, while a genuinely-referenced avatar and a recent event row survived
+
+### Admin panel
+- New `admin` module (`apps/backend/src/admin/`), class-level guarded by
+  `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(Role.ADMIN)` — the first
+  real route to use the RBAC system beyond the `/auth/admin-check` smoke test
+- Users: paginated + email-searched list (`skip`/`take`, `$transaction` for
+  count consistency), single-user detail (+ subscription + workspace count),
+  role change that refuses to change the caller's own role
+  (`ForbiddenException`) — the one realistic self-lockout footgun
+- Subscriptions: paginated list read from the DB (the webhook-synced cache);
+  cancel via a new `BillingService.cancelSubscription` —
+  `stripe.subscriptions.update(id, { cancel_at_period_end: true })` only,
+  never writes the DB directly; the existing `customer.subscription.updated`
+  webhook path syncs `cancelAtPeriodEnd`/`status` back, so admin cancellation
+  reuses the exact sync code a portal-initiated cancel already uses
+- Stats: `groupBy` for users-by-role and subscriptions-by-tier, one
+  `$queryRaw` (`date_trunc('day', "createdAt")`) for the 30-day signup
+  series — the only raw-SQL call in the codebase, deliberately scoped to the
+  one query Prisma's API can't express
+- Queues: `GET /admin/queues` returns `getJobCounts()` for both BullMQ queues
+  (`email`, `chat-reply`) — a small custom endpoint, not Bull Board, to stay
+  in the app's own palette with no new dependency
+- Frontend `/admin` route tree (`app/(dashboard)/admin/`): `RequireAdmin`
+  guard (mirrors `RequireAuth`, additionally redirects non-ADMIN to
+  `/dashboard`), `AdminSidebar`, a hand-rolled `DataTable` (no table
+  primitive existed in the repo), confirmation `Modal`s for role change and
+  subscription cancel; ADMIN-only "Admin" link added to the main dashboard
+  `Sidebar`
+- Swagger docs for every admin route; unit tests for `AdminService`,
+  `AdminController`, and new `BillingService.cancelSubscription` cases —
+  verified live: promoted a real test user to `ADMIN`, exercised every route,
+  confirmed 403 on both a non-admin token and a self-role-change attempt, and
+  confirmed a live Stripe test-mode cancel actually set
+  `cancel_at_period_end: true` on the subscription (checked directly against
+  the Stripe API) while leaving the DB row untouched pending the webhook
+- Three bugs found and fixed along the way, worth remembering: (1) the
+  global `ValidationPipe` had no `transform: true` — harmless until this
+  module's `page`/`limit` query DTOs were the first in the codebase to need
+  `@Type(() => Number)` conversion, which silently doesn't apply without it,
+  so pagination would have shipped broken (`NaN` skip / string types hitting
+  Prisma) had it not been caught before merge; (2) the public `Navbar` only
+  hid itself on `/dashboard`, not `/admin`, causing the marketing header to
+  overlap `DashboardHeader`; (3) the NestJS CLI's scaffolded `*.spec.ts`
+  stubs for the new module don't provide the service's real dependencies and
+  fail to compile as soon as the service has any — expected, but a reminder
+  to replace them before trusting a green "should be defined" test
+
 ### Frontend
 - Landing page: hero (word-cycler, drifting blend-mode stars, scoped
   chromatic aberration), features (constellation + feature-stars), social
@@ -128,7 +197,7 @@ through OpenSpec when that step is actually picked up.
 
 ### Infra & tooling
 - Docker Compose for local dev: Postgres, Redis, Mailpit
-  (infra services only — app containers are not part of this yet, see Step 4)
+  (infra services only — app containers are not part of this yet, see Step 2)
 - pnpm workspaces + Turborepo monorepo
 - GitHub Actions CI: lint + test + build for both apps, on every push/PR to
   `main`
@@ -140,53 +209,52 @@ through OpenSpec when that step is actually picked up.
 
 ## Next — step by step, to final stage
 
-### Step 1 — Cron jobs
-Natural follow-on now that uploads exist (there's something to actually
-clean up), and a clean `@nestjs/schedule` learning piece on its own.
-- `@nestjs/schedule` wired into a small `CronModule`
-- Cleanup job for orphaned/expired uploaded files
-- Cleanup job for any non-TTL'd stale state (most tokens already expire via
-  Redis TTL — this is for whatever doesn't)
-- Logging/observability for job runs (success/failure, duration)
-
-### Step 2 — Admin panel
-The biggest single feature left. Deliberately placed after Step 1 so
-there's something real to administer (scheduled jobs — uploaded files and
-usage limits are already shipped) rather than an empty shell.
-- Backend `admin` module, gated by `@Roles(Role.ADMIN)`
-- Users: list, view, change role
-- Subscriptions: list, view, cancel (via Stripe, synced back through the
-  existing webhook path — admin never writes `tier` directly)
-- Stats: signups over time, tier breakdown, basic Stripe-derived numbers
-- Queues: BullMQ job counts/failures (a lightweight custom endpoint, or
-  wire in Bull Board)
-- Frontend `/admin` route tree: its own layout, tables, confirmation modals
-  for destructive actions
-
-### Step 3 — Import / export chat workspace
+### Step 1 — Import / export chat workspace
 Smaller, self-contained UI feature from the original feature list — a good
-finishing touch once the operational features above exist.
+finishing touch now that the operational features (admin panel included)
+exist.
 - Backend: serialize a workspace (messages + metadata) to a downloadable
   JSON file
 - Backend: import endpoint validating the uploaded shape before creating
   records
 - Frontend: download trigger + file-picker with clear error states
 
-### Step 4 — Full Docker Compose (single-command startup)
+### Step 2 — Full Docker Compose (single-command startup)
 CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
 postgres, redis, and mailpit — isn't met yet; only the three infra services
 are containerized. Doing this once the backend module set is stable avoids
 re-touching Dockerfiles per feature.
 - Multi-stage Dockerfiles (build stage + slim runtime) for both apps
 - Compose service definitions with env wiring, `depends_on`, healthchecks
+- **Stripe CLI as a Compose service**, beyond CLAUDE.md's original ask —
+  raised because verifying the admin panel's subscription-cancel flow
+  end-to-end needed `stripe listen` running by hand locally. Best-practice
+  shape, confirmed against Stripe's own CLI docs (`stripe docs /cli/listen`,
+  `stripe docs /cli`) rather than assumed:
+  - Official `stripe/stripe-cli` image as a `stripe` service, running
+    `stripe listen --forward-to backend:<port>/billing/webhook`.
+  - Headless auth via `--api-key`/`STRIPE_API_KEY` — no interactive
+    `stripe login` needed, so it works unattended in Compose (the CLI's own
+    `--help` output documents this as the CI/agent-friendly path).
+  - **The webhook signing secret does not change between `stripe listen`
+    restarts** for the same forward target (this is documented Stripe CLI
+    behavior, not an assumption to re-verify each time) — so it's captured
+    once via `stripe listen --print-secret` and stored as
+    `STRIPE_WEBHOOK_SECRET` in `.env`. No secret-sync script or shared
+    volume is needed between the `stripe` and `backend` containers, and the
+    secret survives `docker compose down && up`.
+  - `depends_on: backend` is best-effort ordering only — the CLI just
+    retries delivery until the backend answers on `/billing/webhook`, no
+    hard startup coupling required.
 - Update the README's "Running it locally" section to the new single-command
   flow (replacing the current "infra in Docker, apps locally" split)
 
-### Step 5 — Testing depth: integration + E2E
+### Step 3 — Testing depth: integration + E2E
 Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
-chat usage-limits', and avatar upload's suites). CLAUDE.md wants unit +
-integration + E2E. Doing this after Steps 1–4 means the suite covers the
-full, final feature set in one pass instead of needing a second one.
+chat usage-limits', avatar upload's, cron jobs', and the admin panel's
+suites). CLAUDE.md wants unit + integration + E2E. Doing this after Steps
+1–2 means the suite covers the full, final feature set in one pass instead
+of needing a second one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -194,7 +262,7 @@ full, final feature set in one pass instead of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 6 — Production readiness (final stage)
+### Step 4 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
