@@ -559,6 +559,20 @@ Only after review.
 
 ---
 
+# Git Commits
+
+All commits in this repository are authored by the user (`DML_142`) alone.
+Do **not** append any AI-attribution trailer or footer to a commit message —
+no `Co-Authored-By: Claude ...` line, no "Generated with Claude Code" line,
+no similar mention. This overrides Claude Code's default commit-message
+template for this repository. Commit messages otherwise follow the existing
+history's style: a short imperative subject (`type(scope): summary`), a
+body explaining what changed and why when it's not obvious, and — for
+feature commits — a closing `Implements openspec/changes/<name>.` line
+when the commit completes an OpenSpec change.
+
+---
+
 # Coding Standards
 
 Follow:
