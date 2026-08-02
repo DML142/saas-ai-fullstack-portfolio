@@ -141,6 +141,21 @@ export class BillingService {
     });
   }
 
+  async cancelSubscription(userId: string): Promise<void> {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { userId },
+      select: { stripeSubscriptionId: true },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('No subscription for this user');
+    }
+
+    await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+  }
+
   private async applyEvent(event: Stripe.Event): Promise<void> {
     switch (event.type) {
       case 'customer.subscription.created': {

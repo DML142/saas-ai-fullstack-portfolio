@@ -16,6 +16,7 @@ import { join } from 'path';
 import { AVATAR_UPLOAD_DIR } from './users/avatar-upload.config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CronModule } from './cron/cron.module';
+import { AdminModule } from './admin/admin.module';
 
 const connection = new Redis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
@@ -37,6 +38,7 @@ const connection = new Redis(process.env.REDIS_URL!, {
     BillingModule,
     UsersModule,
     CronModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
