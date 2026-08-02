@@ -3,12 +3,24 @@ import { WebhookEventCleanupService } from './webhook-event-cleanup.service';
 import { PrismaService } from 'src/PrismaService';
 import { CRON_WEBHOOK_EVENT_RETENTION_DAYS } from './cron.config';
 
+interface DeleteManyArgs {
+  where: { processedAt: { lt: Date } };
+}
+
 describe('WebhookEventCleanupService', () => {
   let service: WebhookEventCleanupService;
-  let prisma: { processedWebhookEvent: { deleteMany: jest.Mock } };
+  let prisma: {
+    processedWebhookEvent: {
+      deleteMany: jest.Mock<Promise<{ count: number }>, [DeleteManyArgs]>;
+    };
+  };
 
   beforeEach(async () => {
-    prisma = { processedWebhookEvent: { deleteMany: jest.fn() } };
+    prisma = {
+      processedWebhookEvent: {
+        deleteMany: jest.fn<Promise<{ count: number }>, [DeleteManyArgs]>(),
+      },
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -31,9 +43,8 @@ describe('WebhookEventCleanupService', () => {
 
     await service.cleanupStaleWebhookEvents();
 
-    const { where } =
-      prisma.processedWebhookEvent.deleteMany.mock.calls[0][0];
-    const cutoff = where.processedAt.lt as Date;
+    const { where } = prisma.processedWebhookEvent.deleteMany.mock.calls[0][0];
+    const cutoff = where.processedAt.lt;
     const expectedCutoff =
       Date.now() - CRON_WEBHOOK_EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
@@ -45,8 +56,6 @@ describe('WebhookEventCleanupService', () => {
       new Error('connection lost'),
     );
 
-    await expect(
-      service.cleanupStaleWebhookEvents(),
-    ).resolves.toBeUndefined();
+    await expect(service.cleanupStaleWebhookEvents()).resolves.toBeUndefined();
   });
 });
