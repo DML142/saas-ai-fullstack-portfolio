@@ -11,12 +11,14 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
   createWorkspace,
   deleteWorkspace,
+  exportWorkspace,
+  importWorkspace,
   renameWorkspace,
   type Workspace,
 } from '@/lib/stores/chat';
 import { useMessageStore } from '@/lib/stores/message.store';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from './Modal';
@@ -43,6 +45,8 @@ export function Sidebar() {
   const [deleteTarget, setDeleteTarget] = useState<Workspace | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   async function handleRename(e: React.FormEvent) {
     e.preventDefault();
@@ -86,6 +90,43 @@ export function Sidebar() {
       if (pathname !== '/dashboard') router.push('/dashboard');
       closeSidebar();
     } catch {}
+  }
+
+  async function handleExport(ws: Workspace) {
+    try {
+      const data = await exportWorkspace(ws.id);
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${ws.name}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // best-effort — no per-row error slot to surface this in
+    }
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setImportError(null);
+    try {
+      // Strip extra fields (e.g. `exportedAt`) so re-importing a file exactly
+      // as exported doesn't trip the API's forbidNonWhitelisted validation.
+      const { version, name, messages } = JSON.parse(await file.text());
+      const workspace = await importWorkspace({ version, name, messages });
+      useWorkspaceStore.getState().addWorkspace(workspace);
+      setActive(workspace.id);
+      if (pathname !== '/dashboard') router.push('/dashboard');
+      closeSidebar();
+    } catch {
+      setImportError('Import failed. Check the file and try again.');
+    }
   }
 
   function selectWorkspace(id: string) {
@@ -139,6 +180,19 @@ export function Sidebar() {
           <Plus className="w-5" />
           Create new workspace.
         </button>
+        <button
+          type="button"
+          onClick={() => importInputRef.current?.click()}
+          className={cn(
+            'flex items-center justify-start gap-2 truncate rounded-lg bg-white/5 px-3 py-2 mb-1 text-left text-sm transition-colors text-foreground/70 hover:bg-white/10 hover:text-ink',
+          )}
+        >
+          <Upload className="w-5" />
+          Import chat.
+        </button>
+        {importError && (
+          <p className="mb-2 px-3 text-xs text-destructive">{importError}</p>
+        )}
         <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
           {status === 'loading' && (
             <p className="px-3 py-2 text-sm text-foreground/50">Loading…</p>
@@ -176,6 +230,14 @@ export function Sidebar() {
                   )}
                 >
                   {ws.name}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Export ${ws.name}`}
+                  onClick={() => handleExport(ws)}
+                  className="shrink-0 rounded p-1.5 text-foreground/40 transition-colors hover:bg-card/40 hover:text-ink"
+                >
+                  <Download size={14} />
                 </button>
                 <button
                   type="button"
@@ -224,6 +286,14 @@ export function Sidebar() {
           </Link>
         </div>
       </aside>
+
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json"
+        className="hidden"
+        onChange={handleImportFile}
+      />
 
       <Modal
         open={renameTarget !== null}
