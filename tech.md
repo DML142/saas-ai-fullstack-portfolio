@@ -174,6 +174,45 @@ through OpenSpec when that step is actually picked up.
   fail to compile as soon as the service has any — expected, but a reminder
   to replace them before trusting a green "should be defined" test
 
+### Chat import/export
+- `GET /chat/workspaces/:id/export`: ownership check mirrors
+  rename/delete (`workspace.userId !== userId` → `404`, never a `403` that
+  would reveal the workspace exists), returns
+  `{ version: 1, name, exportedAt, messages: [{ role, content, createdAt }] }`
+  in chronological order
+- `POST /chat/workspaces/import`: new `ImportWorkspaceDto`/`ImportMessageDto`
+  (`@IsIn([1])` on `version`, `@ArrayMaxSize(2000)` messages,
+  `@MaxLength` limits matching `SendMessageDto`/`CreateWorkspaceDto`) —
+  always creates a brand-new workspace via one nested
+  `prisma.workspace.create({ data: { messages: { create: [...] } } })`
+  call, never reuses an id/userId from the uploaded file; a message's
+  `createdAt` is preserved from the file when present and left to the
+  schema default (`undefined`, not `null`) otherwise
+- Import never touches the quota counter or the `chat-reply` queue —
+  those side effects only exist in `sendMessage`, so importing restores
+  history without counting as new sends or triggering simulated replies
+- Frontend: per-row Export icon in `Sidebar.tsx` (`Blob` +
+  `URL.createObjectURL` + temporary `<a download>`, since the request
+  needs an `Authorization` header a plain link-click can't send) and an
+  "Import chat" trigger reusing `AvatarMenu.tsx`'s hidden-file-input
+  pattern, with an inline error state for a bad file or failed request
+- Swagger docs for both routes; unit tests for export ordering/ownership
+  and for import's nested-create payload + `createdAt` preserve/fallback
+  behavior; controller tests confirm both routes delegate using the
+  caller's token `userId`, never a value from the request body
+- One bug found and fixed, worth remembering: the global `ValidationPipe`
+  runs with `forbidNonWhitelisted: true`, but the export response
+  (correctly, per spec) includes `exportedAt` — a field `ImportWorkspaceDto`
+  doesn't declare. Re-uploading a file exactly as it was downloaded 400'd
+  with "property exportedAt should not exist". Fixed by having
+  `Sidebar.tsx` destructure only `{ version, name, messages }` before
+  POSTing, rather than forwarding the parsed file verbatim
+- Verified live: exported a real workspace, confirmed the JSON shape,
+  re-imported it (post-fix) into a new workspace with both messages and
+  their original timestamps intact, confirmed `GET /chat/usage`'s `used`
+  count was unchanged and no extra simulated reply appeared for the
+  imported messages
+
 ### Frontend
 - Landing page: hero (word-cycler, drifting blend-mode stars, scoped
   chromatic aberration), features (constellation + feature-stars), social
@@ -197,7 +236,7 @@ through OpenSpec when that step is actually picked up.
 
 ### Infra & tooling
 - Docker Compose for local dev: Postgres, Redis, Mailpit
-  (infra services only — app containers are not part of this yet, see Step 2)
+  (infra services only — app containers are not part of this yet, see Step 1)
 - pnpm workspaces + Turborepo monorepo
 - GitHub Actions CI: lint + test + build for both apps, on every push/PR to
   `main`
@@ -209,17 +248,7 @@ through OpenSpec when that step is actually picked up.
 
 ## Next — step by step, to final stage
 
-### Step 1 — Import / export chat workspace
-Smaller, self-contained UI feature from the original feature list — a good
-finishing touch now that the operational features (admin panel included)
-exist.
-- Backend: serialize a workspace (messages + metadata) to a downloadable
-  JSON file
-- Backend: import endpoint validating the uploaded shape before creating
-  records
-- Frontend: download trigger + file-picker with clear error states
-
-### Step 2 — Full Docker Compose (single-command startup)
+### Step 1 — Full Docker Compose (single-command startup)
 CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
 postgres, redis, and mailpit — isn't met yet; only the three infra services
 are containerized. Doing this once the backend module set is stable avoids
@@ -249,12 +278,12 @@ re-touching Dockerfiles per feature.
 - Update the README's "Running it locally" section to the new single-command
   flow (replacing the current "infra in Docker, apps locally" split)
 
-### Step 3 — Testing depth: integration + E2E
+### Step 2 — Testing depth: integration + E2E
 Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
-chat usage-limits', avatar upload's, cron jobs', and the admin panel's
-suites). CLAUDE.md wants unit + integration + E2E. Doing this after Steps
-1–2 means the suite covers the full, final feature set in one pass instead
-of needing a second one.
+chat usage-limits', avatar upload's, cron jobs', admin panel's, and chat
+import/export's suites). CLAUDE.md wants unit + integration + E2E. Doing
+this after Step 1 means the suite covers the full, final feature set in
+one pass instead of needing a second one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -262,7 +291,7 @@ of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 4 — Production readiness (final stage)
+### Step 3 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
