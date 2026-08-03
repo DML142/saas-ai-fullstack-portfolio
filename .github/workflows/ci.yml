@@ -63,3 +63,158 @@ jobs:
 
       - name: Build
         run: pnpm --filter frontend build
+
+  integration:
+    name: Backend integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate
+
+      # Same docker-compose.test.yml a developer runs locally via
+      # `pnpm --filter backend test:integration` — one definition of "what
+      # test infra looks like", not a second native-services duplicate.
+      - name: Start the test Postgres + Redis containers
+        run: docker compose -f docker-compose.test.yml up -d --wait
+
+      - name: Apply migrations to the test database
+        run: pnpm --filter backend exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5433/saas_ai_test
+
+      - name: Run integration tests
+        run: pnpm --filter backend test:integration
+
+      - name: Tear down the test containers
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Trial period (see openspec/changes/add-integration-e2e-testing's
+    # design.md Open Questions): a real Checkout + real forwarded webhook
+    # depends on external Stripe test-mode reachability and repo secrets
+    # (STRIPE_SECRET_KEY, STRIPE_PRICE_LITE/PRO/ULTRA) that a fork or a
+    # contributor without them configured won't have — non-blocking until
+    # it's been observed stable across several PRs, at which point promote
+    # it to required in branch protection.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright's Chromium
+        run: pnpm --filter frontend exec playwright install --with-deps chromium
+
+      # `stripe listen --print-secret` ties the returned secret to the
+      # (api-key, forward-to) pair, not to this one-off process — the real
+      # `stripe listen --forward-to backend:.../billing/webhook` service
+      # docker-compose.yml starts next returns the exact same secret for
+      # the same pair, confirmed live in dev across restarts. Capturing it
+      # here (before the backend even exists) is what lets the backend
+      # boot with a webhook secret that already matches.
+      - name: Capture a stable Stripe webhook signing secret
+        id: stripe_secret
+        run: |
+          SECRET=$(docker run --rm stripe/stripe-cli:v1.45.0 stripe listen \
+            --api-key "${{ secrets.STRIPE_SECRET_KEY }}" \
+            --forward-to backend:3000/billing/webhook \
+            --print-secret)
+          echo "secret=$SECRET" >> "$GITHUB_OUTPUT"
+
+      - name: Write the .env file docker-compose.yml reads
+        # A bash heredoc's closing delimiter can't be indented to match this
+        # step's YAML nesting, so the file content is built as a step `env:`
+        # block instead — GitHub Actions expands `${{ }}` expressions in it
+        # before the shell ever sees it, and YAML's own multi-line string
+        # handling has no heredoc-indentation problem to work around.
+        env:
+          ENV_CONTENT: |
+            POSTGRES_USER=postgres
+            POSTGRES_PASSWORD=postgres
+            POSTGRES_DB=saas_ai_e2e
+            POSTGRES_PORT=5432
+            REDIS_PORT=6379
+            MAILPIT_SMTP_PORT=1025
+            MAILPIT_UI_PORT=8025
+            BACKEND_PORT=3000
+            FRONTEND_PORT=3001
+            DATABASE_URL=postgresql://postgres:postgres@localhost:5432/saas_ai_e2e
+            REDIS_URL=redis://localhost:6379
+            FRONTEND_URL=http://localhost:3001
+            NEXT_PUBLIC_API_URL=http://localhost:3000
+            JWT_ACCESS_SECRET=ci-e2e-access-secret
+            JWT_REFRESH_SECRET=ci-e2e-refresh-secret
+            JWT_ACCESS_EXPIRES_IN=900
+            JWT_REFRESH_EXPIRES_IN=604800
+            GOOGLE_CLIENT_ID=ci-e2e-dummy
+            GOOGLE_CLIENT_SECRET=ci-e2e-dummy
+            GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+            SMTP_HOST=localhost
+            SMTP_PORT=1025
+            EMAIL_VERIFICATION_TOKEN_TTL=86400
+            PASSWORD_RESET_TOKEN_TTL=3600
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_API_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ steps.stripe_secret.outputs.secret }}
+            STRIPE_PRICE_LITE=${{ secrets.STRIPE_PRICE_LITE }}
+            STRIPE_PRICE_PRO=${{ secrets.STRIPE_PRICE_PRO }}
+            STRIPE_PRICE_ULTRA=${{ secrets.STRIPE_PRICE_ULTRA }}
+            STRIPE_PORTAL_RETURN_URL=http://localhost:3001/dashboard/settings
+            STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3001/dashboard?checkout=success
+            STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3001/
+            AVATAR_UPLOAD_DIR=./uploads/avatars
+            AVATAR_MAX_SIZE_BYTES=2097152
+            CRON_AVATAR_CLEANUP_SCHEDULE=0 3 * * *
+            CRON_WEBHOOK_EVENT_CLEANUP_SCHEDULE=30 3 * * *
+            CRON_WEBHOOK_EVENT_RETENTION_DAYS=30
+        run: printf '%s' "$ENV_CONTENT" > .env
+
+      - name: Start the full stack
+        run: docker compose up -d --build --wait
+
+      - name: Wait for the frontend and backend to accept requests
+        run: |
+          curl --retry 20 --retry-delay 3 --retry-connrefused -sf http://localhost:3000/docs > /dev/null
+          curl --retry 20 --retry-delay 3 --retry-connrefused -sf http://localhost:3001 > /dev/null
+
+      - name: Run Playwright E2E specs
+        run: pnpm --filter frontend test:e2e
+
+      - name: Upload the Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/frontend/playwright-report/
+          retention-days: 7
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down -v

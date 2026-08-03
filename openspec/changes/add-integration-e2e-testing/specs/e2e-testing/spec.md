@@ -19,9 +19,9 @@ verifies the resulting Stripe webhook flips the user's effective tier in
 the database.
 
 #### Scenario: Webhook event flips the user's tier
-- **WHEN** an authenticated test user's Checkout session is simulated via a
-  Stripe CLI test-mode event forwarded through the running webhook
-  endpoint
+- **WHEN** an authenticated test user completes Stripe's hosted test-mode
+  Checkout with a test card, and the resulting webhook is forwarded
+  through the running Stripe CLI service to the backend's webhook endpoint
 - **THEN** the user's effective tier, as returned by `/auth/me`, reflects
   the subscribed plan once the webhook has been processed, without the
   tier ever being set by anything other than the webhook handler

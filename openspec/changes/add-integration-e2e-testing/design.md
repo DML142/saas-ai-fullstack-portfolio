@@ -105,28 +105,47 @@ critical paths (webhook tier flip, chat simulated reply) depend on Redis,
 BullMQ, and the Stripe CLI forwarder; reimplementing that wiring outside
 Docker Compose duplicates infrastructure the project already has.
 
-### Mailpit and Stripe CLI test-mode are read via their existing APIs, not UI scraping
+### Mailpit is read via its API; the checkout flow drives Stripe's real
+hosted Checkout UI with a test card
 The register→verify E2E spec fetches the verification email via Mailpit's
 JSON API (`GET http://localhost:8025/api/v1/messages`) instead of driving
 Mailpit's web UI in a second browser tab — faster, and decoupled from
-Mailpit's UI markup. The checkout→webhook spec uses the Stripe CLI's
-`stripe trigger checkout.session.completed` (already running as the
-`stripe` Compose service, forwarding to the real webhook endpoint) rather
-than driving Stripe's hosted Checkout UI with a test card — this proves the
-webhook → DB tier-flip path, which is the part of the flow this project
-owns; Stripe's own hosted Checkout UI is out of scope to test.
+Mailpit's UI markup.
 
-### CI jobs use GitHub Actions service containers for integration, full
-`docker compose` for E2E
-The `integration` CI job uses `services:` (native GitHub Actions Postgres +
-Redis service containers) rather than `docker compose -f
-docker-compose.test.yml` — faster startup in CI (no image build step, no
-extra Docker-in-Docker layer) and mirrors how many Node projects run CI
-DB-backed tests. Locally, developers use `docker-compose.test.yml` for the
-same effect via `pnpm test:integration` (a pretest script brings the
-Compose file up). The `e2e` CI job, by contrast, runs `docker compose up -d
---build` (the real, full stack) — no equivalent GitHub Actions service
-container setup could stand in for five interdependent containers.
+The checkout→webhook spec was originally planned around `stripe trigger
+checkout.session.completed` (a canned CLI fixture) rather than driving
+Stripe's hosted Checkout UI — but two things ruled that out once actually
+tried: (1) `billing.service.ts`'s `applyEvent` switch has no case for
+`checkout.session.completed` at all — only `customer.subscription.*` and
+`invoice.payment_failed` — so triggering it would exercise nothing; (2)
+retargeting a *different* fixture event (`customer.subscription.created`)
+at a specific pre-existing test user requires overriding internal,
+undocumented Stripe CLI fixture step names, which is brittle and versions
+poorly. Instead, the spec drives the real flow: click checkout for a
+tier → Playwright fills Stripe's hosted Checkout with the `4242 4242 4242
+4242` test card (no 3-D Secure challenge) → Stripe (test mode) completes
+the subscription for real → the **already-running** `stripe listen`
+Compose service forwards the real `customer.subscription.created` webhook
+to our backend, exactly as it would in production. This is slower and
+depends on Stripe's own UI markup, but it is the standard, Stripe-endorsed
+way to test a complete Checkout integration, and it proves the one thing
+`stripe trigger` couldn't: that a checkout a real user completes actually
+flips their tier end-to-end.
+
+### CI jobs use `docker-compose.test.yml` for integration, the full
+`docker compose` stack for E2E — the same Compose files a developer runs
+locally, not native GitHub Actions `services:` containers
+Using the project's own `docker-compose.test.yml` in CI (rather than
+GitHub Actions' native `services:` block) means there is exactly one
+definition of "what test infrastructure looks like" — the same file, same
+image tags, same env vars a developer runs locally with `pnpm
+test:integration`. A `services:` block would require a second, parallel
+port/env mapping to keep in sync with the Compose file, for a marginal
+startup-time win on two Alpine images that already boot in seconds. The
+`e2e` CI job runs `docker compose up -d --build` (the real, full stack) —
+there is no equivalent GitHub Actions service container setup that could
+stand in for five interdependent containers anyway, so both jobs now
+follow the same "run the actual Compose file" pattern.
 
 ## Risks / Trade-offs
 
