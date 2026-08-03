@@ -10,7 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { ApiForbiddenResponse, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 import { ChatService } from './chat.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -18,6 +24,7 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { Role } from 'generated/prisma/enums';
 import { updateWorkspaceDto } from './dto/update_workspace.dto';
 import { UsageLimitGuard } from './guards/usage-limit.guard';
+import { ImportWorkspaceDto } from './dto/import-workspace.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
@@ -84,5 +91,63 @@ export class ChatController {
   ) {
     const user = req.user as { userId: string; role: Role };
     return this.chatService.sendMessage(user.userId, workspaceId, body.content);
+  }
+
+  @ApiOperation({
+    summary: 'Export a workspace',
+    description:
+      "Returns the caller's workspace (must own it) serialized as a " +
+      'versioned JSON document — name, export timestamp, and every ' +
+      "message in that workspace's history, in chronological order.",
+  })
+  @ApiOkResponse({
+    description: 'The exported workspace document',
+    schema: {
+      example: {
+        version: 1,
+        name: 'New chat',
+        exportedAt: '2026-08-03T12:00:00.000Z',
+        messages: [
+          {
+            role: 'USER',
+            content: 'Hello',
+            createdAt: '2026-08-01T10:00:00.000Z',
+          },
+          {
+            role: 'ASSISTANT',
+            content: 'Hi there!',
+            createdAt: '2026-08-01T10:00:05.000Z',
+          },
+        ],
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Workspace does not exist or belongs to another user',
+  })
+  @Get('workspaces/:id/export')
+  exportWorkspace(@Req() req: Request, @Param('id') workspaceId: string) {
+    const user = req.user as { userId: string; role: Role };
+    return this.chatService.exportWorkspace(user.userId, workspaceId);
+  }
+
+  @ApiOperation({
+    summary: 'Import a previously exported workspace',
+    description:
+      'Creates a new workspace owned by the caller from an exported ' +
+      'JSON document, recreating every message it contains. Imported ' +
+      'messages do not count against the monthly send quota and do not ' +
+      'trigger simulated replies.',
+  })
+  @ApiOkResponse({ description: 'The newly created workspace' })
+  @ApiBadRequestResponse({
+    description:
+      'Unrecognized format version, a missing required field, or a ' +
+      'message count/content length beyond the configured maximum',
+  })
+  @Post('workspaces/import')
+  importWorkspace(@Req() req: Request, @Body() body: ImportWorkspaceDto) {
+    const user = req.user as { userId: string; role: Role };
+    return this.chatService.importWorkspace(user.userId, body);
   }
 }

@@ -22,6 +22,17 @@ export interface Usage {
   limit: number | null;
 }
 
+export interface ExportedWorkspace {
+  version: 1;
+  name: string;
+  exportedAt: string;
+  messages: {
+    role: 'USER' | 'ASSISTANT';
+    content: string;
+    createdAt: string;
+  }[];
+}
+
 /** Shape of the 403 body UsageLimitGuard sends once the tier's quota is hit. */
 interface UsageLimitBody extends Usage {
   message: string;
@@ -125,5 +136,28 @@ export async function sendMessage(
 export async function getUsage(): Promise<Usage> {
   const res = await chatAuthFetch(`${API_URL}/chat/usage`, { method: 'GET' });
   if (!res.ok) throw new Error('Failed to load usage');
+  return res.json();
+}
+
+export async function exportWorkspace(
+  workspaceId: string,
+): Promise<ExportedWorkspace> {
+  const res = await chatAuthFetch(
+    `${API_URL}/chat/workspaces/${workspaceId}/export`,
+    { method: 'GET' },
+  );
+  if (!res.ok) throw new Error('Failed to export workspace');
+  return res.json();
+}
+
+export async function importWorkspace(
+  payload: Pick<ExportedWorkspace, 'version' | 'name' | 'messages'>,
+): Promise<Workspace> {
+  const res = await chatAuthFetch(`${API_URL}/chat/workspaces/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to import workspace');
   return res.json();
 }

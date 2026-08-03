@@ -6,6 +6,7 @@ import { BillingService } from 'src/billing/billing.service';
 import { PrismaService } from 'src/PrismaService';
 import { RedisService } from 'src/redis/redis.service';
 import { getUsageKey } from './usage-key.util';
+import { ImportWorkspaceDto } from './dto/import-workspace.dto';
 
 const USAGE_WINDOW_SECONDS = 60 * 60 * 24 * 32; //32 days
 
@@ -95,5 +96,48 @@ export class ChatService {
     );
 
     return { tier, used, limit };
+  }
+
+  async exportWorkspace(userId: string, workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId, userId },
+      select: { name: true },
+    });
+    if (!workspace) {
+      throw new NotFoundException('User or workspace not found');
+    }
+
+    const messages = await this.prisma.message.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'asc' },
+      select: { role: true, content: true, createdAt: true },
+    });
+
+    return {
+      version: 1,
+      name: workspace.name,
+      exportedAt: new Date().toISOString(),
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt,
+      })),
+    };
+  }
+
+  async importWorkspace(userId: string, dto: ImportWorkspaceDto) {
+    return this.prisma.workspace.create({
+      data: {
+        userId,
+        name: dto.name,
+        messages: {
+          create: dto.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
+          })),
+        },
+      },
+    });
   }
 }
