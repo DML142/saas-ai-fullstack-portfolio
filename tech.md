@@ -297,24 +297,58 @@ through OpenSpec when that step is actually picked up.
   Compose network, and confirmed a `docker compose down`/`up` cycle
   preserved the Postgres row (logged back in as the same user)
 
+### Testing depth: integration + E2E
+- **Isolated test infrastructure** — `docker-compose.test.yml` runs
+  Postgres + Redis on tmpfs (RAM, no named volume — genuinely disposable,
+  no `down -v` needed) on ports that don't collide with the dev stack, so
+  both run side by side
+- **25 Supertest integration specs** across auth, billing, chat, users, and
+  admin (`apps/backend/test/*.int-spec.ts`), each booting the real
+  `AppModule` against the test Postgres/Redis instead of mocked providers —
+  covers refresh-token rotation/reuse rejection, real Redis-stored
+  verification/reset tokens, Stripe webhook signature verification +
+  idempotency (signed via `Stripe.webhooks.generateTestHeaderString`, no
+  network call), the real Redis usage-quota counter, avatar upload/replace/
+  remove against the real filesystem, and the admin pagination `transform:
+  true` behavior end-to-end
+- **3 Playwright E2E specs** (`apps/frontend/e2e/`) against the full
+  `docker compose up` stack: register → verify (fetched from Mailpit's API)
+  → login; a real Stripe hosted Checkout completed with the `4242…` test
+  card → the real webhook, forwarded by the already-running Stripe CLI
+  service, flips the tier (the originally-planned `stripe trigger` fixture
+  approach didn't work — no case for `checkout.session.completed` in the
+  webhook handler, and retargeting a different fixture event at a specific
+  user needs undocumented internal fixture params); chat send → simulated
+  reply delivered over the real WebSocket connection
+- New `integration` and `e2e` CI jobs; `e2e` is `continue-on-error` for a
+  trial period — it needs `STRIPE_SECRET_KEY`/`STRIPE_PRICE_LITE/PRO/ULTRA`
+  repo secrets to actually pass end-to-end
+- Two Firefox-only rendering bugs found via manual QA and fixed along the
+  way: the feature-row 3D `rotateY` tilt corrupted text in Firefox (scoped
+  to the heading only now; a `@supports (-moz-appearance: none)` override
+  additionally drops it for one heading long enough to still corrupt); and
+  the pricing section's `ChromaticAberration` wrapper (meant to be
+  hero-only) conflicted with the Ultra card's `backdrop-blur` + nested
+  filter in Firefox's compositor, dropping all pricing-card text — removed
+  from pricing, kept hero-only per the original design intent
+- Two more pre-existing bugs found along the way: (1)
+  `apps/backend/prisma/migrations` was accidentally gitignored and had
+  never been committed — a fresh clone or deploy would have had no schema
+  migrations to apply; (2) the CI `integration` job's env fixture was
+  missing `GOOGLE_CLIENT_ID`/`SECRET`/`CALLBACK_URL` — `GoogleStrategy`
+  throws without them, masked locally by already-set shell env vars but not
+  in a clean CI runner
+- Verified live: full backend unit suite (92 tests) + integration suite (25
+  tests) + Playwright E2E (3 specs) all green locally
+
 ---
 
 ## Next — step by step, to final stage
 
-### Step 1 — Testing depth: integration + E2E
-Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
-chat usage-limits', avatar upload's, cron jobs', admin panel's, and chat
-import/export's suites). CLAUDE.md wants unit + integration + E2E. Doing
-this now that the full Docker Compose stack exists means integration/E2E
-specs can target the real containerized stack instead of a partial one.
-- A test-database Docker profile (isolated Postgres/Redis for tests)
-- Supertest-based integration specs per backend module, hitting the real
-  test DB instead of mocks
-- Playwright E2E for the critical paths: register → verify → login,
-  checkout → webhook → tier flip, chat send → simulated reply
-- Wire both into the existing GitHub Actions workflow as new jobs
+### Step 1 — Production readiness (final stage) — deferred
+**Deferred**: no active work planned here for now; picked back up whenever
+there's an actual deploy target to build against.
 
-### Step 2 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport

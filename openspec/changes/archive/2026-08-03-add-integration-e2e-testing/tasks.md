@@ -125,8 +125,17 @@
       into a cache-aware build step is real surface area to get wrong
       without a live CI run to verify against; revisit once the `e2e` job
       has run for real and its actual runtime is known
-- [ ] 6.4 Open a PR, confirm `integration` and `e2e` jobs both pass, and
-      confirm the existing `backend`/`frontend` jobs are unaffected —
-      **not done**: needs `STRIPE_SECRET_KEY`/`STRIPE_PRICE_LITE/PRO/ULTRA`
-      added as repo secrets first, and pushing/opening a PR needs explicit
-      user go-ahead
+- [x] 6.4 Opened PR #16 (`feat/testing-integration-e2e` → `main`), later
+      #17 for a follow-up fix — both confirmed the existing `backend`/
+      `frontend` jobs unaffected (still pass). First real CI run surfaced a
+      genuine gap `test:6` on this list didn't catch locally: the
+      `integration` job failed on every spec because
+      `GOOGLE_CLIENT_ID`/`SECRET`/`CALLBACK_URL` weren't in
+      `test/integration/test.env` — `GoogleStrategy` throws without them,
+      and this had been silently masked locally by already-set shell env
+      vars. Fixed in #17 and reverified live on a clean CI runner (vars
+      explicitly unset) before pushing — `integration` now passes in CI.
+      `e2e` still fails as documented/expected: needs
+      `STRIPE_SECRET_KEY`/`STRIPE_PRICE_LITE/PRO/ULTRA` added as repo
+      secrets, which needs the repo owner to do (`continue-on-error: true`
+      means this doesn't block merging in the meantime)
