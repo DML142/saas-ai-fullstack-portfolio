@@ -1,9 +1,4 @@
-# local-dev-infra Specification
-
-## Purpose
-Defines the local development infrastructure for the project: how developers stand up the full stack — Postgres, Redis, Mailpit, the backend, the frontend, and a Stripe CLI webhook forwarder — locally via Docker Compose, how those services are configured through environment variables, and how outgoing email is sandboxed during development.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Local infrastructure via Docker Compose
 The system SHALL provide a root-level `docker-compose.yml` that provisions
@@ -58,6 +53,8 @@ The system SHALL run a Mailpit container that captures outgoing SMTP mail sent b
 #### Scenario: Inspecting a captured email
 - **WHEN** the backend sends an email via SMTP configured to point at the Mailpit service
 - **THEN** the email does not leave the local environment and is viewable in Mailpit's web UI
+
+## ADDED Requirements
 
 ### Requirement: Stripe webhook forwarding via Compose
 The system SHALL run a Stripe CLI container that forwards Stripe test-mode webhook events to the backend's webhook endpoint automatically when the stack starts, authenticated headlessly via an API key environment variable.

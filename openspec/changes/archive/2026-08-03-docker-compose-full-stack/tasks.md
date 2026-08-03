@@ -1,0 +1,33 @@
+## 1. Frontend build fix and Dockerfile
+
+- [x] 1.1 Fix `apps/frontend/next.config.ts`: collapse the conflicting `module.exports`/`export default` into a single `export default`, add `output: 'standalone'` and `outputFileTracingRoot` pointed at the monorepo root
+- [x] 1.2 Add `apps/frontend/Dockerfile` (`turbo prune frontend --docker` → install pruned deps → `turbo run build --filter=frontend` → slim runner stage running `.next/standalone/server.js`); build context is the repo root (turbo prune needs the full workspace), not `apps/frontend` — required adding `turbo` itself as a root devDependency, since `turbo.json` existed but nothing installed the CLI
+- [x] 1.3 Add a single root-level `.dockerignore` (context is repo root, not per-app) covering `node_modules`, `.next`, `dist`, `.env*`, `uploads`, etc. for both Dockerfiles
+
+## 2. Backend Dockerfile
+
+- [x] 2.1 Add `apps/backend/Dockerfile` (`turbo prune backend --docker` → full install + `prisma generate` + `turbo run build --filter=backend` in a `build` stage → a separate `prod-deps` stage does a prod-only `pnpm install` → slim runner stage combining prod `node_modules` + `dist`)
+- [x] 2.2 Set the runner stage `CMD` to `sh -c "npx prisma migrate deploy && node dist/src/main"` — found and fixed a real, previously-untested bug along the way: `start:prod` in `apps/backend/package.json` pointed at `dist/main`, but the actual compiled entry is `dist/src/main.js` (tsc's inferred rootDir spans both `src/` and the sibling `generated/prisma` folder, since Prisma's generator output lives outside `src/`, so `dist/` mirrors both). Verified by actually running the compiled output locally — moving `prisma` from `devDependencies` to `dependencies` (needed so the CLI is present in the prod-only install for `migrate deploy`) and pinning it to match `@prisma/client`'s resolved version; also added `onlyBuiltDependencies: [prisma, @prisma/engines]` to `pnpm-workspace.yaml` so their install scripts (engine binary fetch) actually run instead of being silently skipped by pnpm's default script-blocking
+- [x] 2.3 Covered by the root-level `.dockerignore` (see 1.3)
+
+## 3. Compose wiring
+
+- [x] 3.1 Added `healthcheck:` blocks to `postgres` (`pg_isready`) and `redis` (`redis-cli ping`) in `docker-compose.yml`; Mailpit's official image already ships its own `HEALTHCHECK`, so no override was needed there
+- [x] 3.2 Added the `backend` service: `build: { context: ., dockerfile: apps/backend/Dockerfile }` (context is the repo root, not `./apps/backend`, for `turbo prune`), `environment:` overriding `DATABASE_URL`/`REDIS_URL`/`SMTP_HOST`/`SMTP_PORT` to in-network service names/ports, `env_file: .env` for everything else, port mapping via `BACKEND_PORT`, `depends_on` with `condition: service_healthy` on `postgres`/`redis` and plain start-order on `mailpit`; added a named `backend_uploads` volume so avatar uploads survive a restart, matching `postgres_data`
+- [x] 3.3 Added the `frontend` service: same repo-root build context, `env_file: .env`, port mapping via `FRONTEND_PORT`, `depends_on: backend`
+- [x] 3.4 Added the `stripe` service (`stripe/stripe-cli:v1.45.0`, pinned — unpinned `latest` has had reported startup crashes), `command: listen --api-key ${STRIPE_API_KEY} --forward-to backend:${BACKEND_PORT:-3000}/billing/webhook`, `depends_on: backend`
+
+## 4. Env and docs
+
+- [x] 4.1 Consolidated root `.env.example` into the full var set (it previously only had the infra subset; `docker-compose.yml`'s `env_file: .env` needs everything the backend/frontend read, not just postgres/redis/mailpit), added `BACKEND_PORT`/`FRONTEND_PORT`/`STRIPE_API_KEY`, and a comment block marking server-to-server vs browser-facing variables; mirrored the same structure into the real (gitignored) root `.env` for local verification
+- [x] 4.2 Updated the README's "Running it locally" section to lead with the single `docker compose up --build` flow, kept `pnpm --filter ... dev` documented as the hot-reload alternative under its own subheading, documented the one-time `stripe listen --print-secret` step; also updated the Infrastructure/Project-structure blurbs that still described the old postgres-only compose setup
+- [x] 4.3 Updated `tech.md`: moved the Docker Compose write-up from "Next" (old Step 1) into "Already implemented" under Infra & tooling, renumbered the remaining steps (Testing depth is now Step 1, Production readiness is now Step 2), and fixed an internal cross-reference that referred to the removed step
+
+## 5. Verification
+
+- [x] 5.1 Ran `docker compose up --build` from a clean state (`down -v` first). All six services started; `postgres`/`redis`/`mailpit` reported healthy. First build took ~40 minutes, almost entirely npm registry download speed (many "tarball download average speed below 50 KiB/s" warnings in the log) — a one-time cost, not a build-process problem; rebuilds hit Docker's layer cache and came back up in seconds
+- [x] 5.2 Backend applied all 4 pending Prisma migrations on boot (`prisma migrate deploy` log confirmed each one), Nest started with every route mapped, `GET /docs` returned `200`
+- [x] 5.3 `GET /` on the frontend's mapped port returned `200`; Mailpit's UI also confirmed reachable on its mapped port
+- [x] 5.4 Registered a real account via `POST /auth/register` against the containerized backend (`201`, row created in the containerized Postgres); confirmed the verification email landed in Mailpit's API with a `localhost:3001`-based link (proving the browser-facing-URL design decision — it wasn't rewritten to a container hostname)
+- [x] 5.5 Used `docker compose exec stripe stripe trigger checkout.session.completed --api-key <key>` to fire a synthetic event through the running `stripe` container (rather than a full hosted-Checkout browser flow, which needs manual card entry). Every forwarded event, including `checkout.session.completed`, got a `200` back from `http://backend:3000/billing/webhook` per the `stripe` service's own logs — confirms the webhook reaches the backend over the Compose network and passes signature verification. The generic trigger fixture isn't tied to a real subscription/customer in this DB, so it doesn't exercise the tier-flip path itself — that logic was already covered by the existing billing unit tests and a prior live Stripe test-mode verification (per `tech.md`), not re-tested here
+- [x] 5.6 `docker compose down` (no `-v`) then `docker compose up -d`: logged in with the account from 5.4 and got back the same user ID — Postgres data survived. The `stripe` service printed the same `STRIPE_WEBHOOK_SECRET` from `.env` on both the original run and this restart, confirming it's stable across restarts as designed

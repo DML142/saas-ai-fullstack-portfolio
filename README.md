@@ -121,9 +121,11 @@ composition) are understood, not just present.
 ![pnpm](https://img.shields.io/badge/pnpm_workspaces-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
 
 - **pnpm workspaces** + **Turborepo** monorepo (`apps/frontend`, `apps/backend`)
-- **Docker Compose** for local Postgres, Redis, and **Mailpit** (SMTP catcher —
-  every email in this project is caught locally, never sent to a real inbox)
-- **Stripe CLI** for local webhook forwarding and test-mode event simulation
+- **Docker Compose** brings up the whole stack with one command — Postgres,
+  Redis, **Mailpit** (SMTP catcher — every email in this project is caught
+  locally, never sent to a real inbox), the backend and frontend (multi-stage
+  builds, Next.js standalone output), and the **Stripe CLI** for automatic
+  local webhook forwarding
 
 ---
 
@@ -135,7 +137,7 @@ saas-ai-portfolio/
 │  ├─ frontend/        # Next.js app — landing, auth pages, dashboard, chat UI
 │  └─ backend/         # NestJS API — auth, billing, chat, mail, redis modules
 ├─ openspec/           # Spec-driven change proposals + archived, implemented specs
-├─ docker-compose.yml  # postgres + redis + mailpit
+├─ docker-compose.yml  # full stack: postgres, redis, mailpit, backend, frontend, stripe
 └─ turbo.json          # monorepo task graph
 ```
 
@@ -153,7 +155,38 @@ recoverable, not just the *what*.
 ```bash
 # from the repo root
 cp .env.example .env        # fill in the values
-docker compose up -d        # postgres, redis, mailpit
+docker compose up --build   # postgres, redis, mailpit, backend, frontend, stripe
+```
+
+That's the whole stack — backend at `http://localhost:3000` (docs at `/docs`),
+frontend at `http://localhost:3001`, no local Node/pnpm install required. The
+backend applies pending Prisma migrations on boot before it starts accepting
+requests.
+
+Stripe webhook forwarding starts automatically as the `stripe` service, but
+its signing secret has to be captured once, since it isn't something the
+container can hand you back through `.env`:
+
+```bash
+stripe listen --print-secret --forward-to localhost:3000/billing/webhook
+```
+
+Paste the printed `whsec_...` into `.env` as `STRIPE_WEBHOOK_SECRET`. It stays
+valid across `docker compose down`/`up` cycles, so this is a one-time step —
+not something to re-run on every restart.
+
+Mailpit's UI (`http://localhost:8025`) is where every transactional email —
+verification, password reset, billing notifications — actually lands in
+development; nothing is wired to a real provider yet.
+
+### Hot-reload development
+
+The containers above are production-style builds — no file-watching. For
+active development, run Postgres/Redis/Mailpit in Docker and the apps as
+host processes instead:
+
+```bash
+docker compose up -d postgres redis mailpit
 
 pnpm install
 pnpm --filter backend exec prisma migrate dev
@@ -161,15 +194,9 @@ pnpm --filter backend start:dev   # http://localhost:3000  (docs at /docs)
 pnpm --filter frontend dev        # http://localhost:3001
 ```
 
-Stripe billing needs test-mode keys and a local webhook forwarder:
-
-```bash
-stripe listen --forward-to localhost:3000/billing/webhook
-```
-
-Mailpit's UI (`http://localhost:8025`) is where every transactional email —
-verification, password reset, billing notifications — actually lands in
-development; nothing is wired to a real provider yet.
+This workflow reads its env vars from each app's own `.env`
+(`apps/backend/.env`, `apps/frontend/.env`) rather than the root one — copy
+from the matching `.env.example` in each app directory.
 
 ---
 
