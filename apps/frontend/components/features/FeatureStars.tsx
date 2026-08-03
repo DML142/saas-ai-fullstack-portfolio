@@ -296,11 +296,19 @@ export function FeatureStars() {
               </svg>
             </span>
 
-            {/* Fake-3D warp: one tilt across title and copy so the block reads
-                as a single plane turned in space, anchored to the star at its
-                left edge. Dropped below md, where the column is too narrow. */}
-            <div className="min-w-0 flex-1 md:transform-[rotateY(-7deg)] md:origin-[left_center]">
-              <h3 className="font-display text-2xl leading-9 text-ink md:text-3xl md:leading-10">
+            {/* Fake-3D warp: tilts the title so the row reads as turned in
+                space, anchored to the star at its left edge. Dropped below md,
+                where the column is too narrow. Scoped to the heading only —
+                not the body copy, which visibly corrupts under this rotation
+                in Firefox regardless of length. The heading holds up for
+                short titles, but a long one ("In-browser workspace / COS
+                Cloud") still corrupts past a certain distance from the
+                transform-origin — `.feature-title-tilt` in globals.css drops
+                the transform in Firefox specifically via an `@supports
+                (-moz-appearance: none)` feature query, keeping the effect for
+                Chromium/Safari where it renders cleanly at any length. */}
+            <div className="min-w-0 flex-1">
+              <h3 className="feature-title-tilt font-display text-2xl leading-9 text-ink md:origin-[left_center] md:text-3xl md:leading-10 md:transform-[rotateY(-7deg)]">
                 {f.title}
               </h3>
               <p className="mt-3 max-w-prose text-sm leading-relaxed text-foreground/70 md:text-base">

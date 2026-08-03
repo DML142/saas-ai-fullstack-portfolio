@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { ChromaticAberration } from '@/components/hero/ChromaticAberration';
 import { AmbientStarField } from '@/components/features/AmbientStarField';
 import { PlanCard, type Plan } from './PlanCard';
 
@@ -58,41 +57,42 @@ const PLANS: Plan[] = [
 
 export function PricingSection() {
   return (
-    // Slightly gentler than the hero's 1.4 — enough to read on this section's
-    // smaller text without being as strong as the hero.
-    <ChromaticAberration offset={1.1}>
-      <section id="pricing" className="relative overflow-hidden bg-bg">
-        <AmbientStarField />
+    // No ChromaticAberration here (unlike the hero) — CLAUDE.md scopes that
+    // effect to the hero specifically, and wrapping this whole section in it
+    // previously broke rendering in Firefox: the section's own SVG filter
+    // surface conflicts with the Ultra card's `backdrop-blur` + nested
+    // UltraGlow filter, and Firefox's compositor drops the DOM text entirely
+    // where Chromium tolerates the same nesting.
+    <section id="pricing" className="relative overflow-hidden bg-bg">
+      <AmbientStarField />
 
-        <div className="relative z-10 flex flex-col items-center gap-14 px-6 py-24 md:py-32">
-          <div className="flex flex-col items-center gap-4">
-            <h2 className="font-display text-4xl text-ink md:text-6xl">
-              Pricing
-            </h2>
-            <p className="max-w-md text-center text-sm text-foreground/60 md:text-base">
-              The CLI is the product. The plan decides how much runs on our
-              side.
-            </p>
-          </div>
-
-          {/* Ultra's track is wider (1.2fr vs 1fr) — a real layout size, not a
-              `transform: scale()` (which would distort UltraGlow's strokes and
-              blur). `order` places the wide track under the visually centred
-              card (Ultra), regardless of DOM order. */}
-          <ul className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 md:grid-cols-[1fr_1.2fr_1fr] md:gap-5">
-            {PLANS.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} />
-            ))}
-          </ul>
-
-          <Link
-            href="/contact"
-            className="text-cosmic-light decoration-cosmic-light/40 hover:text-ink hover:decoration-ink/60 text-sm underline underline-offset-4 transition-colors"
-          >
-            or contact our sales manager for other plans
-          </Link>
+      <div className="relative z-10 flex flex-col items-center gap-14 px-6 py-24 md:py-32">
+        <div className="flex flex-col items-center gap-4">
+          <h2 className="font-display text-4xl text-ink md:text-6xl">
+            Pricing
+          </h2>
+          <p className="max-w-md text-center text-sm text-foreground/60 md:text-base">
+            The CLI is the product. The plan decides how much runs on our side.
+          </p>
         </div>
-      </section>
-    </ChromaticAberration>
+
+        {/* Ultra's track is wider (1.2fr vs 1fr) — a real layout size, not a
+            `transform: scale()` (which would distort UltraGlow's strokes and
+            blur). `order` places the wide track under the visually centred
+            card (Ultra), regardless of DOM order. */}
+        <ul className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 md:grid-cols-[1fr_1.2fr_1fr] md:gap-5">
+          {PLANS.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} />
+          ))}
+        </ul>
+
+        <Link
+          href="/contact"
+          className="text-cosmic-light decoration-cosmic-light/40 hover:text-ink hover:decoration-ink/60 text-sm underline underline-offset-4 transition-colors"
+        >
+          or contact our sales manager for other plans
+        </Link>
+      </div>
+    </section>
   );
 }

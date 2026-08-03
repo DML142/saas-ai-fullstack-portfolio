@@ -154,4 +154,22 @@
     caret-color: var(--color-ink);
     transition: background-color 5000s ease-in-out 0s;
   }
+
+  /* Firefox's WebRender glyph rasterizer visibly corrupts text sitting
+     inside a CSS 3D `rotateY` transform once it's far enough from the
+     transform-origin — confirmed live: short feature-row titles ("Fast
+     init") survive it, but a longer one ("In-browser workspace / COS
+     Cloud") garbles past the "workspace" mark. Chromium/Safari render the
+     same transform cleanly regardless of text length. `@supports
+     (-moz-appearance: none)` is a standard Firefox-only feature query (no
+     other engine recognizes that property name), so this drops the tilt
+     for Firefox specifically instead of removing it everywhere.
+     `!important` because Tailwind's utilities layer (where the
+     `md:transform-[...]` arbitrary-value class lives) always wins over
+     `@layer base` at equal specificity, regardless of source order. */
+  @supports (-moz-appearance: none) {
+    .feature-title-tilt {
+      transform: none !important;
+    }
+  }
 }
