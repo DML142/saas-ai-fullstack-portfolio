@@ -1,5 +1,8 @@
 {
   "name": "saas-ai-portfolio",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.27.0"
+  "packageManager": "pnpm@10.27.0",
+  "devDependencies": {
+    "turbo": "^2.10.8"
+  }
 }

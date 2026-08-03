@@ -235,55 +235,78 @@ through OpenSpec when that step is actually picked up.
   behavior); verified live against a running Redis instance
 
 ### Infra & tooling
-- Docker Compose for local dev: Postgres, Redis, Mailpit
-  (infra services only — app containers are not part of this yet, see Step 1)
+- **Full Docker Compose stack** — `docker compose up --build` now runs the
+  entire app: Postgres, Redis, Mailpit, the backend, the frontend, and a
+  Stripe CLI webhook forwarder, with no local Node/pnpm install required
+- Multi-stage Dockerfiles for both apps, built via `turbo prune
+  <app> --docker` (deps-only layer, cached separately from source) → full
+  install + build → a separate prod-only `pnpm install --prod` stage → a
+  slim runner combining the two, so devDependencies never ship. The build
+  context is the repo root (prune needs the whole workspace), not the app
+  subdirectory, backed by a single root-level `.dockerignore`
+- Frontend runner uses Next.js `output: 'standalone'` (+
+  `outputFileTracingRoot` pointed at the monorepo root, required since the
+  pnpm lockfile lives above `apps/frontend`); backend runner's `CMD` chains
+  `prisma migrate deploy` before `node dist/src/main` so pending migrations
+  apply on every boot
+- `postgres`/`redis` get explicit `healthcheck:` blocks (`pg_isready`/
+  `redis-cli ping`) so `depends_on: condition: service_healthy` gates real
+  readiness, not just container-start ordering; Mailpit's official image
+  ships its own healthcheck already. A named `backend_uploads` volume keeps
+  avatar uploads across restarts, matching `postgres_data`
+- **Stripe CLI as a Compose service** (`stripe/stripe-cli`, pinned to a
+  specific tag — unpinned `latest` has had reported startup crashes),
+  running `stripe listen --api-key ${STRIPE_API_KEY} --forward-to
+  backend:<port>/billing/webhook` — headless auth via `--api-key`, no
+  interactive `stripe login`. The signing secret is captured once via
+  `stripe listen --print-secret` and stored as `STRIPE_WEBHOOK_SECRET` in
+  `.env`; confirmed live that it's stable across both `stripe listen`
+  restarts and a full `docker compose down`/`up` cycle
+- Root `.env.example` consolidated into the full var set the containerized
+  backend/frontend actually need (it previously only had the
+  Postgres/Redis/Mailpit subset), with a comment block distinguishing
+  server-to-server values (overridden to Compose service hostnames in
+  `docker-compose.yml`) from browser-facing ones (redirects, emailed links,
+  client-side `fetch` — these must stay `localhost:<host-port>` even though
+  everything else runs in containers)
+- The original host-process workflow (`pnpm --filter backend start:dev` +
+  `pnpm --filter frontend dev`, reading from each app's own `.env`) is kept
+  as the documented hot-reload alternative — the containers are
+  production-style builds with no file-watching
+- Found and fixed two bugs along the way, worth remembering: (1)
+  `turbo.json` existed but `turbo` itself was never installed as a
+  dependency anywhere in the repo — nothing had actually invoked it before;
+  (2) `apps/backend/package.json`'s `start:prod` script pointed at
+  `dist/main`, but since Prisma's generator output (`generated/prisma`)
+  lives outside `src/`, tsc's inferred build root spans both directories
+  and the real compiled entry is `dist/src/main.js` — this script had
+  apparently never actually been run before. Caught by running the compiled
+  output directly rather than assuming
 - pnpm workspaces + Turborepo monorepo
 - GitHub Actions CI: lint + test + build for both apps, on every push/PR to
   `main`
 - Branch protection on `main` — PR required, both CI checks required,
   enforced for the repo owner too, no force-push/deletion
 - Swagger/OpenAPI docs served at `/docs`
+- Unit tests unaffected; verified live end-to-end against the containerized
+  stack: registered a real account (Postgres write + Mailpit-caught
+  verification email with a correctly browser-facing `localhost:3001`
+  link), triggered a synthetic Stripe event through the running `stripe`
+  container and confirmed every forwarded event (including
+  `checkout.session.completed`) got a `200` back from the backend over the
+  Compose network, and confirmed a `docker compose down`/`up` cycle
+  preserved the Postgres row (logged back in as the same user)
 
 ---
 
 ## Next — step by step, to final stage
 
-### Step 1 — Full Docker Compose (single-command startup)
-CLAUDE.md's stated goal — `docker compose up` running frontend, backend,
-postgres, redis, and mailpit — isn't met yet; only the three infra services
-are containerized. Doing this once the backend module set is stable avoids
-re-touching Dockerfiles per feature.
-- Multi-stage Dockerfiles (build stage + slim runtime) for both apps
-- Compose service definitions with env wiring, `depends_on`, healthchecks
-- **Stripe CLI as a Compose service**, beyond CLAUDE.md's original ask —
-  raised because verifying the admin panel's subscription-cancel flow
-  end-to-end needed `stripe listen` running by hand locally. Best-practice
-  shape, confirmed against Stripe's own CLI docs (`stripe docs /cli/listen`,
-  `stripe docs /cli`) rather than assumed:
-  - Official `stripe/stripe-cli` image as a `stripe` service, running
-    `stripe listen --forward-to backend:<port>/billing/webhook`.
-  - Headless auth via `--api-key`/`STRIPE_API_KEY` — no interactive
-    `stripe login` needed, so it works unattended in Compose (the CLI's own
-    `--help` output documents this as the CI/agent-friendly path).
-  - **The webhook signing secret does not change between `stripe listen`
-    restarts** for the same forward target (this is documented Stripe CLI
-    behavior, not an assumption to re-verify each time) — so it's captured
-    once via `stripe listen --print-secret` and stored as
-    `STRIPE_WEBHOOK_SECRET` in `.env`. No secret-sync script or shared
-    volume is needed between the `stripe` and `backend` containers, and the
-    secret survives `docker compose down && up`.
-  - `depends_on: backend` is best-effort ordering only — the CLI just
-    retries delivery until the backend answers on `/billing/webhook`, no
-    hard startup coupling required.
-- Update the README's "Running it locally" section to the new single-command
-  flow (replacing the current "infra in Docker, apps locally" split)
-
-### Step 2 — Testing depth: integration + E2E
+### Step 1 — Testing depth: integration + E2E
 Only unit tests exist today (billing's, rate-limiting's, Google OAuth's,
 chat usage-limits', avatar upload's, cron jobs', admin panel's, and chat
 import/export's suites). CLAUDE.md wants unit + integration + E2E. Doing
-this after Step 1 means the suite covers the full, final feature set in
-one pass instead of needing a second one.
+this now that the full Docker Compose stack exists means integration/E2E
+specs can target the real containerized stack instead of a partial one.
 - A test-database Docker profile (isolated Postgres/Redis for tests)
 - Supertest-based integration specs per backend module, hitting the real
   test DB instead of mocks
@@ -291,7 +314,7 @@ one pass instead of needing a second one.
   checkout → webhook → tier flip, chat send → simulated reply
 - Wire both into the existing GitHub Actions workflow as new jobs
 
-### Step 3 — Production readiness (final stage)
+### Step 2 — Production readiness (final stage)
 Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
 none of it can be built or meaningfully tested without a real deploy target.
 - Real email provider: swap Nodemailer's unauthenticated Mailpit transport
