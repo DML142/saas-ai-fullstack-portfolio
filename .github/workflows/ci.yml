@@ -115,7 +115,7 @@ jobs:
     # Skip outright (not fail) when the Stripe secrets aren't configured —
     # the Checkout+webhook spec can't run without them, and failing loudly
     # every run just to say so is noise `continue-on-error` doesn't hide.
-    if: ${{ secrets.STRIPE_SECRET_KEY != '' && secrets.STRIPE_PRICE_LITE != '' && secrets.STRIPE_PRICE_PRO != '' && secrets.STRIPE_PRICE_ULTRA != '' }}
+    if: secrets.STRIPE_SECRET_KEY != '' && secrets.STRIPE_PRICE_LITE != '' && secrets.STRIPE_PRICE_PRO != '' && secrets.STRIPE_PRICE_ULTRA != ''
     steps:
       - uses: actions/checkout@v4
 
