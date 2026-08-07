@@ -1,365 +1,94 @@
-# tech.md — Project Roadmap
+# tech.md — Tech Stack & Properties Reference
 
-Tracks what's already built and what's next, feature by feature, from this
-point to the project's final stage. Update this file as features land —
-move a step from "Next" to "Implemented" once it's actually shipped, don't
-just leave it stale.
-
-This is a plain tracking doc, not an OpenSpec change — the detailed
-proposal/design/spec/tasks breakdown for each step below still happens
-through OpenSpec when that step is actually picked up.
+Quick-reference sheet for the exact versions, services, ports, and config
+groups this repo runs on. This is **not** a progress log — see
+[`progress.md`](progress.md) for what's done/in-flight/blocked, and
+[`roadmap.md`](roadmap.md) for the cloud deployment plan.
 
 ---
 
-## Already implemented
+## Monorepo
 
-### Auth & authorization
-- Registration, login, logout; JWT access tokens + rotating refresh tokens
-  with Redis-tracked token families (replay/reuse detection)
-- Email verification and password reset — single-use Redis tokens, delivered
-  async via BullMQ + Nodemailer, caught locally by Mailpit
-- RBAC: `USER / PREMIUM / ADMIN` roles, embedded in the access token,
-  enforced via a `Roles` decorator + guard
-- Google OAuth: Passport strategy issuing the same access/refresh token pair
-  as password login (`AuthService.issueToken`, unchanged); account resolution
-  by `googleId` → link-by-verified-email → create, so an existing
-  password account and a first-time Google sign-in with the same email
-  merge into one account instead of duplicating; OAuth-only accounts have a
-  nullable `passwordHash` and are rejected (with the same generic error as
-  any wrong password) if someone tries `/auth/login` against them; OAuth
-  failure/denial redirects to `/login?error=oauth_failed` via a
-  `GoogleAuthGuard` instead of surfacing a raw 401 on a top-level browser
-  navigation; "Continue with Google" control on login/register
-- Swagger docs for both Google routes; unit tests for account
-  resolution/linking, the null-passwordHash login rejection, and the guard's
-  failure-redirect behavior — verified live against a real Google OAuth
-  client
+- pnpm workspaces + Turborepo (`turbo@^2.10.8`)
+- Package manager: `pnpm@10.27.0` (pinned via root `package.json`
+  `packageManager` field)
+- Node.js: `node:22-alpine` (pinned in both Dockerfiles); local dev verified
+  on Node 25.2.1
 
-### Billing (Stripe)
-- Hosted Checkout (Lite/Pro/Ultra, monthly) + Billing Portal, both
-  JWT-guarded, both return `{ url }` for the client to redirect to
-- Webhook: raw-body signature verification, idempotent via
-  `ProcessedWebhookEvent`, syncs `Subscription` state from Stripe
-  (Stripe is the source of truth — tier is never granted from the redirect)
-- Effective tier (`FREE/LITE/PRO/ULTRA`) derived from subscription
-  status/product, exposed on `/auth/me`, login, and register
-- Duplicate-subscription guard — an already-subscribed user is redirected to
-  the billing portal instead of creating a second Checkout session
-- `TierGuard` + `@MinTier` decorator exist, ready to gate a route by a
-  minimum-tier check — **still not wired to anything**; chat's usage quota
-  (below) turned out to be a different shape of problem (counted/resetting,
-  not a static minimum) and reused the rate-limit counter instead
-- Swagger docs for all billing endpoints
-- Unit tests: signature verification, idempotency, tier derivation,
-  duplicate-subscription guard — verified live against Stripe test mode
+## Backend (`apps/backend`)
 
-### Chat (COS Assistant — demo, no real LLM)
-- Per-user workspace + message persistence
-- Simulated reply pipeline: BullMQ job + real-time delivery over WebSocket
-- Markdown rendering with syntax-highlighted code blocks
-- Tier-gated monthly message quota: a Redis fixed-window counter
-  (`usage:messages:<userId>:<YYYY-MM>`, reusing
-  `RedisService.incrementWithExpiry`) checked by `UsageLimitGuard` on send
-  and incremented only after a message is actually created — a rejected
-  attempt never counts against the quota; `ULTRA` maps to `null` (no limit)
-  in `TIER_MESSAGE_LIMITS`; over-quota sends get a `403` with a structured
-  `{ message, tier, limit, used }` body instead of a bare status code; the
-  check fails open on a Redis error (an outage shouldn't lock out chat
-  entirely)
-- `GET /chat/usage` exposes real `{ tier, used, limit }`; `UsageSummary` in
-  the dashboard renders it live (an "Unlimited" state for `ULTRA`), and a
-  blocked send in `ChatPanel` shows an inline "upgrade your plan" link
-  instead of a generic error
-- Swagger docs for the usage endpoint and the `403` quota response; unit
-  tests for the guard and the increment-on-send behavior — verified live:
-  bulk-sent a FREE test account to exactly `50/50`, confirmed the 51st send
-  returned `403` and the frontend upgrade prompt rendered
+- NestJS 11 (`@nestjs/core ^11.0.1`, `@nestjs/common ^11.0.1`)
+- Prisma ORM 7 (`prisma ^7.8.0`, `@prisma/client ^7.8.0`, `@prisma/adapter-pg`), PostgreSQL provider
+- Auth: Passport (`passport ^0.7.0`), `@nestjs/jwt ^11.0.2`, Google OAuth via
+  `passport-google-oauth20`, `bcrypt ^6.0.0` for password hashing
+- Queues: `bullmq ^5.80.9` + `@nestjs/bullmq ^11.0.4`, Redis client
+  `ioredis ^5.11.1`
+- Realtime: `@nestjs/websockets` + `@nestjs/platform-socket.io`,
+  `socket.io ^4.8.3`
+- Payments: `stripe ^22.3.2`
+- Email: `nodemailer ^9.0.3` (dev-only, unauthenticated transport → Mailpit)
+- Docs: `@nestjs/swagger ^11.4.6`, served at `/docs`
+- Scheduling: `@nestjs/schedule ^6.1.3` (cron jobs)
+- Static files: `@nestjs/serve-static ^5.0.5` (avatar uploads)
+- Validation: `class-validator ^0.15.1`, `class-transformer ^0.5.1`
+- Tests: Jest — `test` (unit), `test:integration`
+  (`test/jest-integration.json`, against `docker-compose.test.yml`),
+  `test:e2e` (`test/jest-e2e.json`)
 
-### File uploads (avatar)
-- New `users` module (first module outside `auth` to own user data):
-  `POST /users/me/avatar` / `DELETE /users/me/avatar`, JWT-guarded
-- Multer memory storage (not `diskStorage`) + `ParseFilePipe`
-  (`FileTypeValidator` magic-number check, `MaxFileSizeValidator`) —
-  validates the buffer before anything touches disk, so a rejected upload
-  never partially writes a file
-- Local disk storage under `AVATAR_UPLOAD_DIR` (env-configured), served via
-  `ServeStaticModule`; `avatarUrl String?` added to `User`, wired into
-  `/auth/me`, login, and register
-- Replacing an avatar deletes the old file; removing clears `avatarUrl` and
-  deletes the file (no-op if already unset)
-- Frontend: shared `AvatarMenu` popover (click the avatar icon → upload/
-  delete controls, plus a bigger avatar preview + email when one is set)
-  used by both the dashboard header (`AccountBadge`) and the public Navbar
-  — same account, same avatar, wherever the user is logged in
-- Swagger docs; unit tests for `UsersService` (upload/replace/remove/
-  not-found/ENOENT-is-success) and a controller test — verified live via
-  curl plus a synthetic `DataTransfer`-driven file upload in-browser (the
-  sandbox can't drive a native OS file picker)
-- Two bugs found and fixed along the way, worth remembering: (1)
-  `ServeStaticModule`'s `serveRoot` needs its leading slash or Express's
-  static middleware silently never matches any route (a missing file
-  looked like a CORS/ORB error in the browser, not a routing error); (2)
-  rendering the same Popover-based avatar trigger twice across a CSS-only
-  responsive breakpoint (`hidden md:flex` / `md:hidden`) makes Floating UI
-  anchor to a zero-rect hidden element on the breakpoint flip, teleporting
-  the popup to the top-left corner — fixed by rendering `AvatarMenu` once,
-  always visible, instead of duplicating it per breakpoint
+## Frontend (`apps/frontend`)
 
-### Cron jobs
-- `@nestjs/schedule` wired via a global `ScheduleModule.forRoot()`; a new
-  `CronModule` (no controller — internal-only) declares two `@Cron`-decorated
-  services, each on its own daily schedule (configured via `CRON_*` env vars,
-  `process.env`-direct with safe defaults, same pattern as
-  `avatar-upload.config.ts`)
-- `AvatarCleanupService`: diffs on-disk files under `AVATAR_UPLOAD_DIR`
-  against every `User.avatarUrl` in Postgres, deletes anything unreferenced
-  — but only past a 10-minute grace period (by file `mtime`), since the
-  upload write and the DB update aren't transactional and a brand-new file
-  can briefly have no matching row yet
-- `WebhookEventCleanupService`: deletes `ProcessedWebhookEvent` rows older
-  than a configurable retention window (`CRON_WEBHOOK_EVENT_RETENTION_DAYS`,
-  default 30 days — well past Stripe's actual webhook retry window)
-- Both jobs log start/success (with duration + item count)/failure via the
-  existing per-class `new Logger(ClassName.name)` convention; failures are
-  caught and logged, not thrown — `@nestjs/schedule` has no retry mechanism
-  like BullMQ, so a failed run just waits for its next scheduled tick
-- Unit tests for both services (success/no-op/grace-period/error-swallowed
-  paths); verified live against real dev data — a synthetic orphaned file
-  and a backdated `ProcessedWebhookEvent` row were both deleted on a real
-  run, while a genuinely-referenced avatar and a recent event row survived
+- Next.js `16.2.10` (App Router), React `19.2.4`
+- Styling: Tailwind CSS 4, `shadcn ^4.13.0` + `@base-ui/react ^1.6.0`
+- State: `zustand ^5.0.14`
+- Forms: `react-hook-form ^7.81.0` + `@hookform/resolvers` + `zod ^3.25.76`
+- Animation: `gsap ^3.15.0` + `@gsap/react ^2.1.2`
+- 3D: React Three Fiber / Three.js / Drei are the CLAUDE.md target stack for
+  the constellation effect but are **not yet installed** — that effect
+  currently ships as a hand-rolled SVG/DOM implementation
+  (`components/features/InitConstellation.tsx`)
+- Markdown/code: `react-markdown ^10.1.0`, `remark-gfm`, `rehype-highlight`,
+  `highlight.js`
+- Realtime client: `socket.io-client ^4.8.3`
+- E2E: `@playwright/test ^1.62.1`
 
-### Admin panel
-- New `admin` module (`apps/backend/src/admin/`), class-level guarded by
-  `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(Role.ADMIN)` — the first
-  real route to use the RBAC system beyond the `/auth/admin-check` smoke test
-- Users: paginated + email-searched list (`skip`/`take`, `$transaction` for
-  count consistency), single-user detail (+ subscription + workspace count),
-  role change that refuses to change the caller's own role
-  (`ForbiddenException`) — the one realistic self-lockout footgun
-- Subscriptions: paginated list read from the DB (the webhook-synced cache);
-  cancel via a new `BillingService.cancelSubscription` —
-  `stripe.subscriptions.update(id, { cancel_at_period_end: true })` only,
-  never writes the DB directly; the existing `customer.subscription.updated`
-  webhook path syncs `cancelAtPeriodEnd`/`status` back, so admin cancellation
-  reuses the exact sync code a portal-initiated cancel already uses
-- Stats: `groupBy` for users-by-role and subscriptions-by-tier, one
-  `$queryRaw` (`date_trunc('day', "createdAt")`) for the 30-day signup
-  series — the only raw-SQL call in the codebase, deliberately scoped to the
-  one query Prisma's API can't express
-- Queues: `GET /admin/queues` returns `getJobCounts()` for both BullMQ queues
-  (`email`, `chat-reply`) — a small custom endpoint, not Bull Board, to stay
-  in the app's own palette with no new dependency
-- Frontend `/admin` route tree (`app/(dashboard)/admin/`): `RequireAdmin`
-  guard (mirrors `RequireAuth`, additionally redirects non-ADMIN to
-  `/dashboard`), `AdminSidebar`, a hand-rolled `DataTable` (no table
-  primitive existed in the repo), confirmation `Modal`s for role change and
-  subscription cancel; ADMIN-only "Admin" link added to the main dashboard
-  `Sidebar`
-- Swagger docs for every admin route; unit tests for `AdminService`,
-  `AdminController`, and new `BillingService.cancelSubscription` cases —
-  verified live: promoted a real test user to `ADMIN`, exercised every route,
-  confirmed 403 on both a non-admin token and a self-role-change attempt, and
-  confirmed a live Stripe test-mode cancel actually set
-  `cancel_at_period_end: true` on the subscription (checked directly against
-  the Stripe API) while leaving the DB row untouched pending the webhook
-- Three bugs found and fixed along the way, worth remembering: (1) the
-  global `ValidationPipe` had no `transform: true` — harmless until this
-  module's `page`/`limit` query DTOs were the first in the codebase to need
-  `@Type(() => Number)` conversion, which silently doesn't apply without it,
-  so pagination would have shipped broken (`NaN` skip / string types hitting
-  Prisma) had it not been caught before merge; (2) the public `Navbar` only
-  hid itself on `/dashboard`, not `/admin`, causing the marketing header to
-  overlap `DashboardHeader`; (3) the NestJS CLI's scaffolded `*.spec.ts`
-  stubs for the new module don't provide the service's real dependencies and
-  fail to compile as soon as the service has any — expected, but a reminder
-  to replace them before trusting a green "should be defined" test
+## Data & infra (local dev, via Docker Compose)
 
-### Chat import/export
-- `GET /chat/workspaces/:id/export`: ownership check mirrors
-  rename/delete (`workspace.userId !== userId` → `404`, never a `403` that
-  would reveal the workspace exists), returns
-  `{ version: 1, name, exportedAt, messages: [{ role, content, createdAt }] }`
-  in chronological order
-- `POST /chat/workspaces/import`: new `ImportWorkspaceDto`/`ImportMessageDto`
-  (`@IsIn([1])` on `version`, `@ArrayMaxSize(2000)` messages,
-  `@MaxLength` limits matching `SendMessageDto`/`CreateWorkspaceDto`) —
-  always creates a brand-new workspace via one nested
-  `prisma.workspace.create({ data: { messages: { create: [...] } } })`
-  call, never reuses an id/userId from the uploaded file; a message's
-  `createdAt` is preserved from the file when present and left to the
-  schema default (`undefined`, not `null`) otherwise
-- Import never touches the quota counter or the `chat-reply` queue —
-  those side effects only exist in `sendMessage`, so importing restores
-  history without counting as new sends or triggering simulated replies
-- Frontend: per-row Export icon in `Sidebar.tsx` (`Blob` +
-  `URL.createObjectURL` + temporary `<a download>`, since the request
-  needs an `Authorization` header a plain link-click can't send) and an
-  "Import chat" trigger reusing `AvatarMenu.tsx`'s hidden-file-input
-  pattern, with an inline error state for a bad file or failed request
-- Swagger docs for both routes; unit tests for export ordering/ownership
-  and for import's nested-create payload + `createdAt` preserve/fallback
-  behavior; controller tests confirm both routes delegate using the
-  caller's token `userId`, never a value from the request body
-- One bug found and fixed, worth remembering: the global `ValidationPipe`
-  runs with `forbidNonWhitelisted: true`, but the export response
-  (correctly, per spec) includes `exportedAt` — a field `ImportWorkspaceDto`
-  doesn't declare. Re-uploading a file exactly as it was downloaded 400'd
-  with "property exportedAt should not exist". Fixed by having
-  `Sidebar.tsx` destructure only `{ version, name, messages }` before
-  POSTing, rather than forwarding the parsed file verbatim
-- Verified live: exported a real workspace, confirmed the JSON shape,
-  re-imported it (post-fix) into a new workspace with both messages and
-  their original timestamps intact, confirmed `GET /chat/usage`'s `used`
-  count was unchanged and no extra simulated reply appeared for the
-  imported messages
+- PostgreSQL: `postgres:16-alpine`
+- Redis: `redis:7-alpine`
+- Mailpit (SMTP catcher): `axllent/mailpit`, UI at `:8025`
+- Stripe CLI (webhook forwarder): `stripe/stripe-cli:v1.45.0`
+- `docker-compose.yml` — full local stack (frontend, backend, Postgres,
+  Redis, Mailpit, Stripe CLI)
+- `docker-compose.test.yml` — tmpfs-only Postgres + Redis on non-colliding
+  ports, for integration tests (no named volume, genuinely disposable)
 
-### Frontend
-- Landing page: hero (word-cycler, drifting blend-mode stars, scoped
-  chromatic aberration), features (constellation + feature-stars), social
-  proof (reviews/sponsors marquee/FAQ), pricing (3 plan cards, wired to
-  checkout), navbar, footer
-- Auth pages: login / register / forgot-password / reset-password /
-  verify-email, client session store, silent refresh-on-load, route guards
-- Dashboard shell: sidebar, workspace/chat switcher, settings (account,
-  billing, session), account badge showing role + tier
+## CI/CD
 
-### Security
-- App-level rate limiting: Redis-backed fixed-window counter (`INCR` +
-  conditional `EXPIRE`), keyed by route + client IP, applied via a
-  `RateLimitGuard`/`@RateLimit` decorator to `/auth/login`, `/auth/register`,
-  `/auth/forgot-password`, `/auth/resend-verification`,
-  `/auth/reset-password`, `/auth/verify-email`
-- Fails open (logs + allows) if Redis is unreachable; `429` + `Retry-After`
-  on limit exceeded
-- Swagger docs (`429` responses) + unit tests (guard behavior, counter
-  behavior); verified live against a running Redis instance
+- GitHub Actions, `.github/workflows/ci.yml`, jobs: `backend` (lint/test/
+  build), `frontend` (lint/build), `integration` (Supertest against the test
+  Postgres/Redis), `e2e` (Playwright, `continue-on-error` — needs Stripe
+  secrets to fully pass)
+- Branch protection on `main`: PR required, both required checks enforced
+  (including for the repo owner), no force-push/deletion
+- No CD/deploy pipeline yet — see `roadmap.md`
 
-### Infra & tooling
-- **Full Docker Compose stack** — `docker compose up --build` now runs the
-  entire app: Postgres, Redis, Mailpit, the backend, the frontend, and a
-  Stripe CLI webhook forwarder, with no local Node/pnpm install required
-- Multi-stage Dockerfiles for both apps, built via `turbo prune
-  <app> --docker` (deps-only layer, cached separately from source) → full
-  install + build → a separate prod-only `pnpm install --prod` stage → a
-  slim runner combining the two, so devDependencies never ship. The build
-  context is the repo root (prune needs the whole workspace), not the app
-  subdirectory, backed by a single root-level `.dockerignore`
-- Frontend runner uses Next.js `output: 'standalone'` (+
-  `outputFileTracingRoot` pointed at the monorepo root, required since the
-  pnpm lockfile lives above `apps/frontend`); backend runner's `CMD` chains
-  `prisma migrate deploy` before `node dist/src/main` so pending migrations
-  apply on every boot
-- `postgres`/`redis` get explicit `healthcheck:` blocks (`pg_isready`/
-  `redis-cli ping`) so `depends_on: condition: service_healthy` gates real
-  readiness, not just container-start ordering; Mailpit's official image
-  ships its own healthcheck already. A named `backend_uploads` volume keeps
-  avatar uploads across restarts, matching `postgres_data`
-- **Stripe CLI as a Compose service** (`stripe/stripe-cli`, pinned to a
-  specific tag — unpinned `latest` has had reported startup crashes),
-  running `stripe listen --api-key ${STRIPE_API_KEY} --forward-to
-  backend:<port>/billing/webhook` — headless auth via `--api-key`, no
-  interactive `stripe login`. The signing secret is captured once via
-  `stripe listen --print-secret` and stored as `STRIPE_WEBHOOK_SECRET` in
-  `.env`; confirmed live that it's stable across both `stripe listen`
-  restarts and a full `docker compose down`/`up` cycle
-- Root `.env.example` consolidated into the full var set the containerized
-  backend/frontend actually need (it previously only had the
-  Postgres/Redis/Mailpit subset), with a comment block distinguishing
-  server-to-server values (overridden to Compose service hostnames in
-  `docker-compose.yml`) from browser-facing ones (redirects, emailed links,
-  client-side `fetch` — these must stay `localhost:<host-port>` even though
-  everything else runs in containers)
-- The original host-process workflow (`pnpm --filter backend start:dev` +
-  `pnpm --filter frontend dev`, reading from each app's own `.env`) is kept
-  as the documented hot-reload alternative — the containers are
-  production-style builds with no file-watching
-- Found and fixed two bugs along the way, worth remembering: (1)
-  `turbo.json` existed but `turbo` itself was never installed as a
-  dependency anywhere in the repo — nothing had actually invoked it before;
-  (2) `apps/backend/package.json`'s `start:prod` script pointed at
-  `dist/main`, but since Prisma's generator output (`generated/prisma`)
-  lives outside `src/`, tsc's inferred build root spans both directories
-  and the real compiled entry is `dist/src/main.js` — this script had
-  apparently never actually been run before. Caught by running the compiled
-  output directly rather than assuming
-- pnpm workspaces + Turborepo monorepo
-- GitHub Actions CI: lint + test + build for both apps, on every push/PR to
-  `main`
-- Branch protection on `main` — PR required, both CI checks required,
-  enforced for the repo owner too, no force-push/deletion
-- Swagger/OpenAPI docs served at `/docs`
-- Unit tests unaffected; verified live end-to-end against the containerized
-  stack: registered a real account (Postgres write + Mailpit-caught
-  verification email with a correctly browser-facing `localhost:3001`
-  link), triggered a synthetic Stripe event through the running `stripe`
-  container and confirmed every forwarded event (including
-  `checkout.session.completed`) got a `200` back from the backend over the
-  Compose network, and confirmed a `docker compose down`/`up` cycle
-  preserved the Postgres row (logged back in as the same user)
+## Env var groups (see `.env.example`)
 
-### Testing depth: integration + E2E
-- **Isolated test infrastructure** — `docker-compose.test.yml` runs
-  Postgres + Redis on tmpfs (RAM, no named volume — genuinely disposable,
-  no `down -v` needed) on ports that don't collide with the dev stack, so
-  both run side by side
-- **25 Supertest integration specs** across auth, billing, chat, users, and
-  admin (`apps/backend/test/*.int-spec.ts`), each booting the real
-  `AppModule` against the test Postgres/Redis instead of mocked providers —
-  covers refresh-token rotation/reuse rejection, real Redis-stored
-  verification/reset tokens, Stripe webhook signature verification +
-  idempotency (signed via `Stripe.webhooks.generateTestHeaderString`, no
-  network call), the real Redis usage-quota counter, avatar upload/replace/
-  remove against the real filesystem, and the admin pagination `transform:
-  true` behavior end-to-end
-- **3 Playwright E2E specs** (`apps/frontend/e2e/`) against the full
-  `docker compose up` stack: register → verify (fetched from Mailpit's API)
-  → login; a real Stripe hosted Checkout completed with the `4242…` test
-  card → the real webhook, forwarded by the already-running Stripe CLI
-  service, flips the tier (the originally-planned `stripe trigger` fixture
-  approach didn't work — no case for `checkout.session.completed` in the
-  webhook handler, and retargeting a different fixture event at a specific
-  user needs undocumented internal fixture params); chat send → simulated
-  reply delivered over the real WebSocket connection
-- New `integration` and `e2e` CI jobs; `e2e` is `continue-on-error` for a
-  trial period — it needs `STRIPE_SECRET_KEY`/`STRIPE_PRICE_LITE/PRO/ULTRA`
-  repo secrets to actually pass end-to-end
-- Two Firefox-only rendering bugs found via manual QA and fixed along the
-  way: the feature-row 3D `rotateY` tilt corrupted text in Firefox (scoped
-  to the heading only now; a `@supports (-moz-appearance: none)` override
-  additionally drops it for one heading long enough to still corrupt); and
-  the pricing section's `ChromaticAberration` wrapper (meant to be
-  hero-only) conflicted with the Ultra card's `backdrop-blur` + nested
-  filter in Firefox's compositor, dropping all pricing-card text — removed
-  from pricing, kept hero-only per the original design intent
-- Two more pre-existing bugs found along the way: (1)
-  `apps/backend/prisma/migrations` was accidentally gitignored and had
-  never been committed — a fresh clone or deploy would have had no schema
-  migrations to apply; (2) the CI `integration` job's env fixture was
-  missing `GOOGLE_CLIENT_ID`/`SECRET`/`CALLBACK_URL` — `GoogleStrategy`
-  throws without them, masked locally by already-set shell env vars but not
-  in a clean CI runner
-- Verified live: full backend unit suite (92 tests) + integration suite (25
-  tests) + Playwright E2E (3 specs) all green locally
+- **Server-to-server** (DB/Redis/SMTP hosts) — overridden to Compose service
+  hostnames in `docker-compose.yml`
+- **Browser-facing** (redirect URLs, emailed links, client `fetch` base) —
+  must stay `localhost:<host-port>` even when everything else runs in
+  containers
+- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+  `STRIPE_PRICE_LITE/PRO/ULTRA`, `STRIPE_API_KEY` (CLI forwarder auth)
+- Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+  `GOOGLE_CALLBACK_URL`
+- Uploads: `AVATAR_UPLOAD_DIR`
+- Cron: `CRON_*` (job schedules, `CRON_WEBHOOK_EVENT_RETENTION_DAYS`)
 
----
+## Deployment targets
 
-## Next — step by step, to final stage
-
-### Step 1 — Production readiness (final stage) — deferred
-**Deferred**: no active work planned here for now; picked back up whenever
-there's an actual deploy target to build against.
-
-Everything CLAUDE.md marks as deploy-time-only — genuinely last, because
-none of it can be built or meaningfully tested without a real deploy target.
-- Real email provider: swap Nodemailer's unauthenticated Mailpit transport
-  for an authenticated one (Gmail SMTP, Resend, Postmark, …)
-- Cloudflare in front of the deployed domain (DNS → Cloudflare → server);
-  optional Turnstile widget on login/register/forgot-password + server-side
-  verification
-- Live Stripe keys, live price IDs, production webhook endpoint registered
-  in the Stripe dashboard
-- Secrets management for the deploy target
-- A release/deploy pipeline (build + push images, run migrations, smoke
-  test, rollback plan)
-- Optional stretch: yearly billing (explicitly deferred in the billing
-  design — monthly-only was a deliberate scope cut, not a limitation)
+None live yet. Both frontend and backend move to AWS Free Tier — see
+`roadmap.md`. Nothing below application-level config exists for AWS today
+(confirmed: no IAM policies, no security groups, no `aws-sdk`/`@aws-sdk/*`
+dependency, nothing under `.aws/`).

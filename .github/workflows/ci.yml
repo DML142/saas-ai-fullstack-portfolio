@@ -115,17 +115,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      # Job-level `if:` can't reference `secrets` directly — GitHub rejects
+      # the whole workflow file for it (a control-flow side-channel around
+      # secret values). Pulling the check into a step's `env:` first, then
+      # branching on that step's *output* in every later step's `if:`, is
+      # the supported way to skip a job's real work when secrets are absent.
+      - name: Check whether Stripe test-mode secrets are configured
+        id: stripe_secrets
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_LITE: ${{ secrets.STRIPE_PRICE_LITE }}
+          STRIPE_PRICE_PRO: ${{ secrets.STRIPE_PRICE_PRO }}
+          STRIPE_PRICE_ULTRA: ${{ secrets.STRIPE_PRICE_ULTRA }}
+        run: |
+          if [ -n "$STRIPE_SECRET_KEY" ] && [ -n "$STRIPE_PRICE_LITE" ] && [ -n "$STRIPE_PRICE_PRO" ] && [ -n "$STRIPE_PRICE_ULTRA" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping E2E — STRIPE_SECRET_KEY/STRIPE_PRICE_LITE/PRO/ULTRA repo secrets aren't set."
+          fi
 
-      - uses: actions/setup-node@v4
+      - if: steps.stripe_secrets.outputs.configured == 'true'
+        uses: pnpm/action-setup@v4
+
+      - if: steps.stripe_secrets.outputs.configured == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install dependencies
+        if: steps.stripe_secrets.outputs.configured == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright's Chromium
+        if: steps.stripe_secrets.outputs.configured == 'true'
         run: pnpm --filter frontend exec playwright install --with-deps chromium
 
       # `stripe listen --print-secret` ties the returned secret to the
@@ -137,6 +161,7 @@ jobs:
       # boot with a webhook secret that already matches.
       - name: Capture a stable Stripe webhook signing secret
         id: stripe_secret
+        if: steps.stripe_secrets.outputs.configured == 'true'
         run: |
           SECRET=$(docker run --rm stripe/stripe-cli:v1.45.0 stripe listen \
             --api-key "${{ secrets.STRIPE_SECRET_KEY }}" \
@@ -145,6 +170,7 @@ jobs:
           echo "secret=$SECRET" >> "$GITHUB_OUTPUT"
 
       - name: Write the .env file docker-compose.yml reads
+        if: steps.stripe_secrets.outputs.configured == 'true'
         # A bash heredoc's closing delimiter can't be indented to match this
         # step's YAML nesting, so the file content is built as a step `env:`
         # block instead — GitHub Actions expands `${{ }}` expressions in it
@@ -193,18 +219,21 @@ jobs:
         run: printf '%s' "$ENV_CONTENT" > .env
 
       - name: Start the full stack
+        if: steps.stripe_secrets.outputs.configured == 'true'
         run: docker compose up -d --build --wait
 
       - name: Wait for the frontend and backend to accept requests
+        if: steps.stripe_secrets.outputs.configured == 'true'
         run: |
           curl --retry 20 --retry-delay 3 --retry-connrefused -sf http://localhost:3000/docs > /dev/null
           curl --retry 20 --retry-delay 3 --retry-connrefused -sf http://localhost:3001 > /dev/null
 
       - name: Run Playwright E2E specs
+        if: steps.stripe_secrets.outputs.configured == 'true'
         run: pnpm --filter frontend test:e2e
 
       - name: Upload the Playwright report on failure
-        if: failure()
+        if: failure() && steps.stripe_secrets.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -212,9 +241,9 @@ jobs:
           retention-days: 7
 
       - name: Show container logs on failure
-        if: failure()
+        if: failure() && steps.stripe_secrets.outputs.configured == 'true'
         run: docker compose logs --tail 200
 
       - name: Tear down the stack
-        if: always()
+        if: always() && steps.stripe_secrets.outputs.configured == 'true'
         run: docker compose down -v
