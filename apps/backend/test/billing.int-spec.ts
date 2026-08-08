@@ -27,8 +27,7 @@ describe('Billing (integration)', () => {
 
   beforeAll(async () => {
     // `webhooks.constructEvent` is real Stripe signature-verification code
-    // (no network call) — only the account-touching calls are mocked, per
-    // design.md's "mocked Stripe SDK call, real DB/guard wiring" decision.
+    // (no network call) — only the account-touching calls are mocked.
     const realStripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       typescript: true,
     });
@@ -56,9 +55,8 @@ describe('Billing (integration)', () => {
     await prisma.user.deleteMany({
       where: { email: { contains: 'int-test-' } },
     });
-    // Also resets /auth/register's real rate-limit counter — otherwise it
-    // accumulates across this file's several registered test users and
-    // eventually 429s instead of the status this spec is asserting.
+    // Also resets /auth/register's rate-limit counter, which otherwise
+    // accumulates across this file's registered test users.
     await redis.flushdb();
   });
 

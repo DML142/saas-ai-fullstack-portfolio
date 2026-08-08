@@ -3,8 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 /** Tracks an arbitrary media query via useSyncExternalStore — same
- * rationale as useReducedMotion: reads a browser value that changes
- * outside React without the extra-render footgun of setState-in-effect. */
+ * rationale as useReducedMotion. */
 export function useMediaQuery(query: string) {
   function subscribe(callback: () => void) {
     const mql = window.matchMedia(query);

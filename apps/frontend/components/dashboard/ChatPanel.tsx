@@ -16,9 +16,8 @@ import {
   type ChatMessage,
 } from '@/lib/stores/chat';
 
-// One shared reference for the "no messages" case, so `messages` stays a
-// stable dependency for the auto-scroll effect (a fresh `[]` each render
-// wouldn't). The non-empty case is already a stable Zustand reference.
+// Shared reference for the "no messages" case, so `messages` stays a stable
+// dependency for the auto-scroll effect (a fresh `[]` each render wouldn't).
 const EMPTY: ChatMessage[] = [];
 
 export function ChatPanel() {
@@ -30,10 +29,8 @@ export function ChatPanel() {
   // the input until the "assistant" answers.
   const pending = useMessageStore((s) => s.pending);
   const isPending = activeId ? pending.has(activeId) : false;
-  // Select the stable `byWorkspace` slice and derive `messages` in the render
-  // body, not the selector — a selector returning a fresh `[]` each call would
-  // break useSyncExternalStore's snapshot stability (the "getSnapshot should
-  // be cached" warning).
+  // `messages` is derived in the render body, not the selector — a selector
+  // returning a fresh `[]` each call breaks useSyncExternalStore's snapshot stability.
   const byWorkspace = useMessageStore((s) => s.byWorkspace);
   const messages = activeId ? (byWorkspace[activeId] ?? EMPTY) : EMPTY;
 

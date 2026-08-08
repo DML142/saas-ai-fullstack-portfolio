@@ -63,9 +63,8 @@ describe('Admin (integration)', () => {
       where: { id: userId },
       data: { role: 'ADMIN' },
     });
-    // Role is embedded in the JWT at issue time, so a plain DB update to an
-    // already-issued token's user doesn't retroactively change its claims —
-    // log in again to get a token that reflects the new ADMIN role.
+    // Role is embedded in the JWT at issue time — log in again to get a
+    // token that reflects the new ADMIN role.
     const email = (await prisma.user.findUnique({ where: { id: userId } }))!
       .email;
     const loginRes = await request(app.getHttpServer())
@@ -96,11 +95,8 @@ describe('Admin (integration)', () => {
     await registerUser();
     await registerUser();
 
-    // The whole point of this scenario: `page`/`limit` arrive as strings
-    // over HTTP — this only passes if the global ValidationPipe's
-    // `transform: true` actually converts them via @Type(() => Number),
-    // the exact behavior a bug once shipped without (tech.md's admin-panel
-    // note on this).
+    // `page`/`limit` arrive as strings over HTTP — only passes if the global
+    // ValidationPipe's `transform: true` converts them via @Type(() => Number).
     const res = await request(app.getHttpServer())
       .get('/admin/users?page=1&limit=2')
       .set('Authorization', `Bearer ${admin.accessToken}`)

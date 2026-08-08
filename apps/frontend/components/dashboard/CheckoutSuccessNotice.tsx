@@ -7,14 +7,8 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 
 type Phase = 'finalizing' | 'done' | 'slow';
 
-/**
- * Shown when Stripe redirects back to /dashboard?checkout=success.
- *
- * The tier flips only once the Stripe webhook lands, which can lag the redirect
- * by a moment — so access is never granted from this redirect. We just poll
- * /auth/me until it reports the paid tier (the webhook-synced source of truth),
- * refreshing the store as we go, then strip the query param.
- */
+// The tier flips only once the Stripe webhook lands, which can lag the
+// redirect — so this polls /auth/me until it reports the paid tier.
 export function CheckoutSuccessNotice() {
   const params = useSearchParams();
   const router = useRouter();

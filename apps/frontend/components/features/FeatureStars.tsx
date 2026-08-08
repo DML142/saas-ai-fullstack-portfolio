@@ -131,10 +131,8 @@ export function FeatureStars() {
       const container = containerRef.current;
       if (!container) return;
 
-      /** Edge geometry is measured from the DOM, since row heights depend on
-       * copy, font loading and wrap width. Returns trimmed endpoints in
-       * container-relative pixels (the overlay SVG has no viewBox, so its
-       * user units are CSS px). */
+      // Measured from the DOM since row heights depend on copy/font/wrap width.
+      // Returns trimmed endpoints in container-relative px (no viewBox on the overlay SVG).
       const geometry = (edgeIndex: number) => {
         const cRect = container.getBoundingClientRect();
         const [fromId, toId] = EDGES[edgeIndex];
@@ -189,12 +187,9 @@ export function FeatureStars() {
 
       if (reducedMotion) return () => ro.disconnect();
 
-      // One scrubbed timeline for the whole pillar, not a trigger per element:
-      // appending tweens to a single timeline makes the ordering (each line
-      // finishes drawing before the next starts) structural.
-      //
-      // Everything is authored in its final state and only hidden here, before
-      // paint — so no-JS leaves the pillar complete rather than blank.
+      // One scrubbed timeline for the whole pillar, not a trigger per element,
+      // makes the draw ordering structural. Everything is authored in its
+      // final state and only hidden here, so no-JS leaves the pillar complete.
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: container,

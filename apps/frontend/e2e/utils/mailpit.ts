@@ -16,8 +16,7 @@ interface MailpitMessage {
 }
 
 // Mailpit has no per-recipient filter in its list endpoint, so this fetches
-// the full inbox and filters client-side — fine at E2E scale (a handful of
-// messages per run).
+// the full inbox and filters client-side — fine at E2E scale.
 async function findLatestMessage(
   recipient: string,
   subjectContains: string,

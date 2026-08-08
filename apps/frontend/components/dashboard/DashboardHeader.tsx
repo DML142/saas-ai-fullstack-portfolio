@@ -4,9 +4,8 @@ import { Menu } from 'lucide-react';
 import { useDashboardUiStore } from '@/lib/stores/dashboard-ui.store';
 import { AccountBadge } from './AccountBadge';
 
-/** Shared header row for every dashboard page — chat panel and settings
- * alike — so the mobile sidebar toggle and account badge don't have to be
- * rebuilt (and kept in sync) per page. */
+/** Shared across dashboard pages so the mobile toggle and account badge
+ * don't have to be rebuilt per page. */
 export function DashboardHeader({ title }: { title: string }) {
   const toggleSidebar = useDashboardUiStore((s) => s.toggleSidebar);
 

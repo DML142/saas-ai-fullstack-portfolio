@@ -3,8 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 /** True once the page has scrolled past `thresholdPx`. Same
- * useSyncExternalStore pattern as useReducedMotion/useMediaQuery — reading
- * a value (scroll position) that changes outside React's control. */
+ * useSyncExternalStore pattern as useReducedMotion/useMediaQuery. */
 export function useScrolled(thresholdPx: number) {
   function subscribe(callback: () => void) {
     window.addEventListener('scroll', callback, { passive: true });

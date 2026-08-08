@@ -52,8 +52,7 @@ export function StarField() {
       if (!container || !contextSafe) return;
 
       // `spawn` recurses via onComplete/delayedCall callbacks that fire after
-      // this effect runs, so their animations aren't auto-tracked by useGSAP.
-      // contextSafe re-registers each one so cleanup reverts every in-flight star.
+      // useGSAP stops auto-tracking, so contextSafe re-registers each one.
       const spawn = contextSafe((star: HTMLDivElement) => {
         const { size, duration, color } = randomStarProps();
         const top = randomBetween(0, 100);

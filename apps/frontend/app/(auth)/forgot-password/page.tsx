@@ -65,9 +65,7 @@ export default function ForgotPasswordPage() {
         },
       );
 
-      // Fail-open safety net (see login/page.tsx for the full rationale): rAF
-      // tweens pause on a backgrounded tab and could strand the reveal at
-      // autoAlpha:0; setTimeout still fires and forces the visible state.
+      // Fail-open safety net — see login/page.tsx for the full rationale.
       const failsafe = window.setTimeout(() => {
         if (tween.progress() < 1 && rootRef.current) {
           gsap.set(groups, { clearProps: 'visibility,opacity,transform' });

@@ -45,9 +45,8 @@ test('register, verify via the Mailpit-caught email, then log in', async ({
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.locator('form').getByRole('button', { name: 'Login' }).click();
-  // Login redirects client-side (router.push) on success — wait for it
-  // before navigating again, or a `page.goto` fired mid-request can cancel
-  // the in-flight login call before the refresh cookie is even set.
+  // A `page.goto` fired mid-request can cancel the in-flight login call
+  // before the refresh cookie is even set.
   await expect(
     page.getByRole('button', { name: 'Avatar options' }),
   ).toBeVisible();

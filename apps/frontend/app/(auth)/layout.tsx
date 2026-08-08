@@ -1,10 +1,6 @@
 import { StarField } from '@/components/hero/StarField';
 
-/**
- * Shared by the auth pages. Reuses the hero's star field, which needs a
- * positioned, clipped ancestor (the outer div). The card is deliberately
- * plain: a translucent tint and faint border, no blur or glow.
- */
+// The hero's star field needs a positioned, clipped ancestor — the outer div.
 export default function AuthLayout({
   children,
 }: {

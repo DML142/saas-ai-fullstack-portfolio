@@ -121,9 +121,8 @@ export function FaqList() {
       });
 
       rows.forEach((row) => {
-        // Each question fades up as it enters the viewport — a discrete reveal,
-        // not scrubbed. `toggleActions` ends in `none`, not `reverse`, so a
-        // revealed question isn't re-hidden on scroll-up.
+        // Discrete reveal, not scrubbed. `toggleActions` ends in `none`, not
+        // `reverse`, so a revealed question isn't re-hidden on scroll-up.
         gsap.fromTo(
           row,
           { autoAlpha: 0, y: 24 },

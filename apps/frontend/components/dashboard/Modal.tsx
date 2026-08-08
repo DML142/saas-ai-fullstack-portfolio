@@ -2,12 +2,8 @@
 
 import { useEffect, type ReactNode } from 'react';
 
-/**
- * Minimal dialog: backdrop + centred panel, closed by Escape or a backdrop
- * click. Deliberately not a full focus-trap implementation — these dialogs
- * hold one input and two buttons, and pulling in a headless-dialog dependency
- * for that would be more machinery than the case warrants.
- */
+// Deliberately not a full focus-trap implementation — these dialogs hold one
+// input and two buttons, not worth a headless-dialog dependency.
 export function Modal({
   open,
   onClose,

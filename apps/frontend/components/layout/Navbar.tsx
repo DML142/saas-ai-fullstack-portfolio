@@ -37,9 +37,8 @@ export function Navbar() {
   const handleAnchorClick = useSmoothAnchor();
   const pathname = usePathname();
 
-  // The dashboard (and admin) have their own header, so the marketing nav
-  // doesn't belong there. Hooks are all called above this check to keep hook
-  // order stable.
+  // Dashboard/admin have their own header; hooks stay above this check to
+  // keep hook order stable.
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
     return null;
   }

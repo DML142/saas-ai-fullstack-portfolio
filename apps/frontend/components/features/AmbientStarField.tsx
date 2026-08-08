@@ -10,23 +10,15 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const STAR_COUNT = 160;
 
-/**
- * Deterministic pseudo-random in [0, 1) from a seed. Used instead of
- * Math.random() for star positions so server and client markup match (no
- * hydration mismatch) and the field is present before JS runs. Animation
- * params can use Math.random freely — they only run client-side.
- */
+/** Deterministic pseudo-random in [0, 1) from a seed — star positions must
+ * match between server and client markup to avoid a hydration mismatch. */
 function hash(seed: number) {
   const x = Math.sin(seed) * 43758.5453;
   return x - Math.floor(x);
 }
 
-/**
- * Rounded to 3 decimals before reaching JSX: the CSSOM serializes inline-style
- * numbers to ~6 significant digits, so a full-precision float round-trips back
- * out of `element.style` as a different string — read as a hydration mismatch.
- * Rounding keeps the authored string stable.
- */
+/** Rounded before reaching JSX: the CSSOM re-serializes inline-style floats
+ * to ~6 digits, so a full-precision value round-trips as a different string. */
 function round(n: number) {
   return Math.round(n * 1000) / 1000;
 }
@@ -52,9 +44,8 @@ export function AmbientStarField() {
       const wrapper = wrapperRef.current;
       if (!layer || !wrapper) return;
 
-      // Vertical parallax: the star layer lags page scroll, reading as depth.
-      // Triggered off the wrapper but transforming the inner layer, which is
-      // taller with headroom top/bottom so translating it never reveals an edge.
+      // The inner layer is taller than the wrapper, with headroom top/bottom,
+      // so translating it for parallax never reveals an edge.
       gsap.to(layer, {
         yPercent: 10,
         ease: 'none',
@@ -66,9 +57,8 @@ export function AmbientStarField() {
         },
       });
 
-      // Gentle per-star life: a slow sway + opacity twinkle, each with random
-      // duration/phase so the field never pulses in unison. Random is safe
-      // here — inside the client-only effect, never in the SSR markup.
+      // Random duration/phase per star so the field never pulses in unison —
+      // safe here, inside the client-only effect, never in SSR markup.
       const stars = layer.querySelectorAll<HTMLDivElement>(
         '[data-ambient-star]',
       );
