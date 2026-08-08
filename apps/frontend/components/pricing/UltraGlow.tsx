@@ -11,11 +11,8 @@ gsap.registerPlugin(useGSAP);
 const TRAVEL_S = 5.5;
 /** Card corner radius — must match the card's `rounded-3xl` (1.5rem). */
 const RADIUS = 24;
-/**
- * Segment length as a percentage of the perimeter. `pathLength={100}`
- * normalises the path, so this is a true percentage regardless of the card's
- * measured size — the dash math never has to know the real pixel perimeter.
- */
+/** Segment length as a percentage of the perimeter — `pathLength={100}`
+ * normalises the path, so the dash math never needs the real pixel perimeter. */
 const DASH = 22;
 
 /** Traces the card's outline as a real path, so a stroke drawn along it turns
@@ -36,15 +33,8 @@ function roundedRectPath(w: number, h: number, r: number) {
   ].join(' ');
 }
 
-/**
- * The Ultra card's glow — the one bespoke effect in an otherwise calm section.
- *
- * The travelling light is a `stroke-dasharray` dash drawn along the card's
- * outline path (animated via `stroke-dashoffset`), not an element on
- * `offset-path` — a dash follows the rounded corners exactly, where an
- * element on a motion path would pivot like a stick at each corner. The
- * travelling line carries all the light; there's no separate static halo.
- */
+/** The light is a `stroke-dasharray` dash animated via `stroke-dashoffset`,
+ * not an `offset-path` element, which would pivot like a stick at each corner. */
 export function UltraGlow() {
   const scopeRef = useRef<HTMLDivElement>(null);
   const turbulenceRef = useRef<SVGFETurbulenceElement>(null);
@@ -91,9 +81,8 @@ export function UltraGlow() {
         },
       );
 
-      // Animate the displacement noise so the light's edge wobbles as it
-      // travels. baseFrequency (not seed) is animated because it morphs
-      // continuously, while seed would pop to a different noise field.
+      // baseFrequency (not seed) is animated so the noise morphs continuously
+      // instead of popping between fields.
       const turbulence = turbulenceRef.current;
       if (turbulence) {
         gsap.to(turbulence, {
@@ -146,10 +135,8 @@ export function UltraGlow() {
 
         {size && !reducedMotion && (
           <>
-            {/* Three passes, widest and softest first: outer bloom, cosmic
-                body, hot near-white core. Stacking them reads as light rather
-                than a coloured line. Only the two outer passes are warped, so
-                the core stays crisp while its glow breathes. */}
+            {/* Three passes, widest first — stacking reads as light rather than
+                a line. Only the two outer passes are warped, so the core stays crisp. */}
             <path
               ref={(el) => {
                 dashRefs.current[0] = el;
@@ -162,9 +149,8 @@ export function UltraGlow() {
               pathLength={100}
               strokeDasharray={dashArray}
               opacity={0.55}
-              // Warp and blur chained in one CSS `filter` — a CSS `filter`
-              // overrides the SVG `filter` attribute, so splitting them would
-              // silently drop the warp.
+              // Chained in one CSS `filter`: a CSS filter overrides the SVG
+              // `filter` attribute, so splitting them would drop the warp.
               style={{ filter: `url(#${warpId}) blur(9px)` }}
             />
             <path

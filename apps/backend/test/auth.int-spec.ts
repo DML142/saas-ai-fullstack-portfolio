@@ -202,10 +202,8 @@ describe('Auth (integration)', () => {
       .send({ email, password: newPassword })
       .expect(201);
 
-    // The access token itself isn't revoked (JWTs aren't stateful), but the
-    // refresh-token family behind it must be — the guarantee reset-password
-    // makes is "no one can silently stay logged in", not "this exact
-    // access token stops working before it expires".
+    // Access tokens aren't stateful and stay valid; reset-password's guarantee
+    // is that the refresh-token family behind them is revoked.
     await request(app.getHttpServer())
       .post('/auth/refresh')
       .set('Cookie', `refreshToken=${oldRefreshToken}`)

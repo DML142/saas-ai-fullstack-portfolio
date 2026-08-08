@@ -13,10 +13,8 @@ test('a sent message gets a simulated reply over the real WebSocket connection',
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('correct-horse-battery-staple');
   await page.locator('form').getByRole('button', { name: 'Register' }).click();
-  // Wait for the redirect the successful register triggers before
-  // navigating again — a `page.goto` fired mid-request can cancel the
-  // in-flight call before the refresh cookie is set, bouncing RequireAuth
-  // back to /login.
+  // A `page.goto` fired mid-request can cancel the in-flight register call
+  // before the refresh cookie is set, bouncing RequireAuth back to /login.
   await expect(
     page.getByRole('button', { name: 'Avatar options' }),
   ).toBeVisible();
@@ -32,10 +30,8 @@ test('a sent message gets a simulated reply over the real WebSocket connection',
   await expect(page.getByText('Hello from Playwright')).toBeVisible();
   await expect(page.getByText('COS Assistant is typing…')).toBeVisible();
 
-  // The reply processor waits 1–3s before writing the assistant message and
-  // pushing it over the socket — no page reload happens between send and
-  // this assertion, so a pass here is proof the WebSocket delivery path
-  // (not a poll or a refetch) is what rendered it.
+  // No page reload happens between send and this assertion, so a pass here
+  // proves the WebSocket delivery path rendered it, not a poll or refetch.
   await expect(
     page.getByText("This reply isn't connected to any LLM API", {
       exact: false,

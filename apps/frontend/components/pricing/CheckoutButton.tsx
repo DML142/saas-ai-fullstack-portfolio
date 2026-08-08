@@ -7,14 +7,8 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { useResetOnBfcache } from '@/hooks/useResetOnBfcache';
 import { PlanButton } from './PlanButton';
 
-/**
- * The pricing CTA, wired to Stripe Checkout. Kept separate from PlanCard so the
- * card stays presentational and the one backend-touching call site is isolated.
- *
- * Guests can't check out — they're bounced to /login. Authenticated users get a
- * Checkout session URL from the backend and are sent to Stripe's hosted page via
- * a full navigation (not router.push — it's an external origin).
- */
+// Kept separate from PlanCard so the card stays presentational and the one
+// backend-touching call site is isolated. Guests get bounced to /login.
 export function CheckoutButton({
   tier,
   name,
@@ -47,7 +41,7 @@ export function CheckoutButton({
         ({ accessToken, user }) => setSession(accessToken, user),
         () => clearSession(),
       );
-      window.location.href = url;
+      window.location.href = url; // full navigation — Stripe's hosted page is an external origin
     } catch {
       setState('error');
     }

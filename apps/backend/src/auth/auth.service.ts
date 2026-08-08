@@ -72,7 +72,6 @@ export class AuthService {
     for (const familyId of families) {
       const jtis = await this.redisService.getFamilyMembers(familyId);
 
-      //sort undefined or null
       const tokenKeys = jtis
         .filter((jti) => Boolean(jti))
         .map((jti) => `refresh:${jti}`);

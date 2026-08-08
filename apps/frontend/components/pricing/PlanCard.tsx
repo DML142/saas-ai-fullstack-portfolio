@@ -27,13 +27,8 @@ export type Plan = {
   featured?: boolean;
 };
 
-/** Ultra's name only: a cosmic-light-to-white gradient that sweeps
- * continuously via `background-clip: text` + animated `backgroundPositionX`.
- *
- * The gradient's end stops are the same color and the tile is sized to the
- * text's measured width, so shifting by exactly one tile width loops
- * seamlessly (the same trick `IntegrationsMarquee` uses). Reduced motion
- * just skips the tween, leaving a static gradient title. */
+/** Ultra's name only: a gradient sweeping via `background-clip: text` +
+ * animated `backgroundPositionX`, tiled to the text's measured width so it loops seamlessly. */
 function UltraTitle({ name }: { name: string }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const reducedMotion = useReducedMotion();
@@ -42,9 +37,8 @@ function UltraTitle({ name }: { name: string }) {
   useEffect(() => {
     const el = textRef.current;
     if (!el) return;
-    // Measure the real pixel width and drive the tween in pixels: percentage
-    // background-position scales by `container - image size`, so it can't be
-    // trusted to land on an exact one-tile shift.
+    // Driven in real pixels: percentage background-position scales by
+    // `container - image size`, so it can't land on an exact one-tile shift.
     const measure = () => {
       const w = el.getBoundingClientRect().width;
       if (w > 0) setTileWidth(Math.round(w));
@@ -125,21 +119,19 @@ export function PlanCard({ plan }: { plan: Plan }) {
         <PlanStar star={star} />
       </div>
 
-      {/* flex-1 is load-bearing: it stretches the wrapper to the tallest card
-          (via the grid's items-stretch) so every card matches height and the
-          CTAs align. */}
+      {/* flex-1 is load-bearing: stretches to the tallest card via the grid's
+          items-stretch, so every card's CTA aligns. */}
       <div className="relative flex w-full flex-1">
         {/* Layer 0 — the glow, behind everything. Ultra only. */}
         {featured && <UltraGlow />}
 
-        {/* Layer 1 — the glass ring. Translucent and blurred so the glow
-            behind it bleeds through; only its rim shows, since the opaque body
-            below covers the middle. */}
+        {/* Layer 1 — the glass ring; only its rim shows, since the opaque
+            body below covers the middle. */}
         <div
           className={cn(
             'pointer-events-none absolute inset-0 z-10 rounded-3xl',
             featured
-              ? 'border-cosmic-light/40 border-2 bg-cosmic-light/[0.04] backdrop-blur-md'
+              ? 'border-cosmic-light/40 border-2 bg-cosmic-light/4 backdrop-blur-md'
               : 'border-border border',
           )}
           aria-hidden
@@ -153,7 +145,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
             featured && [
               // The inset IS the visible glass rim's width — wide enough to
               // read as frosted glass rather than a hairline.
-              'm-[5px] rounded-[calc(1.5rem-5px)]',
+              'm-1.25 rounded-[calc(1.5rem-5px)]',
               // Extra padding (real padding, not a transform) on top of the
               // wider grid track.
               'md:p-9',

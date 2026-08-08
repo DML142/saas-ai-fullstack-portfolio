@@ -7,14 +7,8 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 
 type State = 'idle' | 'sending' | 'sent' | 'error';
 
-/**
- * Soft gate for unverified accounts: the app stays usable, but a persistent
- * bar nudges the user to verify and lets them re-request the email.
- *
- * Reads `emailVerified` from the auth store directly (not `useAuth()`, which
- * drops the flag). The bar clears itself once verified, since /verify-email
- * writes the new state back into this same store.
- */
+// Reads `emailVerified` from the auth store directly (not `useAuth()`, which
+// drops the flag) — the bar clears itself once /verify-email updates the store.
 export function VerificationBanner() {
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);

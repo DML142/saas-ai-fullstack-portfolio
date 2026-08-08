@@ -15,9 +15,8 @@ export async function createIntegrationApp(
 
   const moduleFixture: TestingModule = await builder.compile();
 
-  // Mirrors main.ts's bootstrap exactly — an integration spec is only
-  // useful if it exercises the same middleware/pipe wiring a real request
-  // goes through.
+  // Mirrors main.ts's bootstrap — a spec only exercises real behavior if it
+  // goes through the same middleware/pipe wiring as a real request.
   const app = moduleFixture.createNestApplication<INestApplication<App>>({
     rawBody: true,
   });
@@ -34,9 +33,8 @@ export async function createIntegrationApp(
   return app;
 }
 
-// Shared shape of the fields these integration specs actually read off a
-// register/login response — narrower than the real DTO, deliberately, so
-// each spec casts `res.body` to only what it uses instead of `any`.
+// Narrower than the real DTO, deliberately, so specs cast `res.body` to
+// only what they use instead of `any`.
 export interface AuthResponseBody {
   id: string;
   accessToken: string;
@@ -54,9 +52,8 @@ export function uniqueEmail(prefix = 'int-test'): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
 }
 
-// Supertest has no built-in "read this cookie back out of a response"
-// helper for a plain (non-agent) request — parsing `Set-Cookie` by hand
-// avoids depending on superagent's internal cookie-jar implementation.
+// Supertest has no built-in way to read a cookie back out of a plain
+// (non-agent) response, so `Set-Cookie` is parsed by hand.
 export function extractCookieValue(
   res: { headers: Record<string, string | string[] | undefined> },
   name: string,
@@ -72,9 +69,8 @@ export function extractCookieValue(
   return match.slice(name.length + 1);
 }
 
-// Reads a single-use token (`verify:<token>`, `reset:<token>`) directly out
-// of Redis — the HTTP response never returns it, only the queued email
-// would, and integration specs don't run a mail transport.
+// Reads a single-use token directly out of Redis — integration specs don't
+// run a mail transport, so the HTTP response never returns it.
 export async function findSingleTokenByPrefix(
   redis: Redis,
   prefix: string,

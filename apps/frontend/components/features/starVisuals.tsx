@@ -1,11 +1,6 @@
-/**
- * Star rendering shared across the features section.
- *
- * The gradients live in one hidden sprite, not per-SVG: `url(#id)` resolves
- * document-wide, so duplicating the defs would mean invalid duplicate IDs.
- * The trade-off is that anything rendering <StarMark> needs <StarGradientDefs>
- * mounted on the page — FeaturesSection mounts it once.
- */
+// Gradients live in one hidden sprite, not per-SVG: `url(#id)` resolves
+// document-wide, so duplicating the defs would mean invalid duplicate IDs.
+// Anything rendering <StarMark> needs <StarGradientDefs> mounted — FeaturesSection does it once.
 
 const BLOOM_ID = 'cos-star-bloom';
 const SPIKE_ID = 'cos-star-spike';
@@ -20,10 +15,7 @@ export function spikePath(r: number) {
   return `M 0 ${-R} Q ${k} ${-k} ${R} 0 Q ${k} ${k} 0 ${R} Q ${-k} ${k} ${-R} 0 Q ${-k} ${-k} 0 ${-R} Z`;
 }
 
-/**
- * Mount once per page. Follows the same hidden-svg pattern ChromaticAberration
- * already uses for its filter defs.
- */
+/** Mount once per page — same hidden-svg pattern ChromaticAberration uses. */
 export function StarGradientDefs() {
   return (
     <svg

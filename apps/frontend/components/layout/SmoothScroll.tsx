@@ -12,19 +12,8 @@ gsap.registerPlugin(useGSAP, ScrollTrigger, ScrollSmoother);
 /** How far the content lags the real scroll position, in seconds. */
 const SMOOTH_SECONDS = 1.2;
 
-/**
- * Page-wide smooth scrolling via GSAP's ScrollSmoother.
- *
- * ScrollSmoother keeps the native scrollbar as the source of truth, so
- * `window.scrollY`/`scroll` (the navbar's `useScrolled`) and ScrollTrigger
- * both keep working untouched. Anything `position: fixed` must stay OUTSIDE
- * the wrapper or it rides the content transform — the navbar is a sibling in
- * the root layout for that reason.
- *
- * No CSS is authored for #smooth-wrapper / #smooth-content: ScrollSmoother
- * applies what it needs at create time. Authoring it in globals.css would
- * strand the reduced-motion path (no smoother) with an unscrollable wrapper.
- */
+// `position: fixed` elements must stay OUTSIDE this wrapper or they ride the
+// content transform — the navbar is a sibling in the root layout for that reason.
 export function SmoothScroll({ children }: { children: ReactNode }) {
   const reducedMotion = useReducedMotion();
 

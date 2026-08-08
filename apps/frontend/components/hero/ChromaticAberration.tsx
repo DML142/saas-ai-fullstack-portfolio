@@ -7,16 +7,9 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
  * it down for smaller text; defaulted so the hero's look is unchanged. */
 const DEFAULT_OFFSET = 1.4;
 
-/**
- * Wraps its children in a subtle, constant RGB channel-split, as one SVG
- * <filter> applied via CSS `filter: url(...)`. Scoped to this subtree (not the
- * whole page) so only the wrapped content re-rasterizes — cheap enough to run
- * constantly.
- *
- * The filter id comes from `useId()`, not a module constant: this mounts more
- * than once per page (hero + pricing), and a hardcoded id would duplicate ids
- * and leave `url(#…)` resolution up to the browser.
- */
+/** Scoped to this subtree (not the whole page) so only the wrapped content
+ * re-rasterizes. The filter id comes from `useId()`, not a module constant,
+ * since this mounts more than once per page (hero + pricing). */
 export function ChromaticAberration({
   children,
   offset = DEFAULT_OFFSET,

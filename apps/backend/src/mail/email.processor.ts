@@ -2,9 +2,8 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import nodemailer from 'nodemailer';
 
-// Brand palette, hard-coded as hex rather than the site's oklch() tokens:
-// email clients (Outlook especially) don't support oklch, so these are the
-// sRGB equivalents of --color-bg / --color-ink / --color-cosmic.
+// sRGB hex, not the site's oklch() tokens — email clients (Outlook especially)
+// don't support oklch.
 const BG = '#0a0a0a';
 const CARD = '#141414';
 const INK = '#ffffff';
@@ -108,11 +107,8 @@ export class EmailProcessor extends WorkerHost {
     return `COS Code\n\n${intro}\n\n${action}: ${link}\n`;
   }
 
-  /**
-   * Single dark-theme template shared by both emails. Table-based layout with
-   * inline styles — the only combination email clients render reliably (no
-   * flexbox/grid, no external stylesheets, no oklch).
-   */
+  /** Table-based layout with inline styles — the only combination email
+   * clients render reliably (no flexbox/grid, no external stylesheets). */
   private renderHtml(
     heading: string,
     intro: string,

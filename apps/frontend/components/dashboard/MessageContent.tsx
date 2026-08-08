@@ -5,10 +5,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 
-/** Renders message content as markdown with syntax-highlighted code blocks —
- * never raw HTML. Elements are styled via `components` overrides rather than
- * a `prose` plugin class, since `@tailwindcss/typography` isn't installed
- * here and pulling it in for one component isn't worth the dependency. */
+/** Styled via `components` overrides rather than a `prose` plugin class,
+ * since `@tailwindcss/typography` isn't worth the dependency for one component. */
 export function MessageContent({ content }: { content: string }) {
   return (
     <ReactMarkdown
@@ -38,9 +36,8 @@ export function MessageContent({ content }: { content: string }) {
         strong: ({ children }) => (
           <strong className="font-semibold text-ink">{children}</strong>
         ),
-        // rehype-highlight only adds a `language-*` class to block code, so
-        // inline code has no className — the react-markdown v9+ way to tell
-        // them apart (the old `inline` prop was removed).
+        // rehype-highlight only classes block code — a className-less code
+        // element is how react-markdown v9+ signals inline.
         code: ({ className, children, ...props }) => {
           if (!className) {
             return (

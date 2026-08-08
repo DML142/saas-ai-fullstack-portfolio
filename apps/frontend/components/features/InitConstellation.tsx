@@ -36,14 +36,8 @@ type StarDef = {
   hub?: boolean;
 };
 
-/**
- * The Big Dipper — seven bright stars of Ursa Major, one per node.
- *
- * `cos init` takes Megrez, where the bowl meets the handle — the only star
- * with three connections. Coordinates, magnitudes and distances are real
- * catalogue values. Short labels go mid-handle (Alioth, Mizar) where stars
- * crowd in; the longest goes to Alkaid at the tip, where there's open space.
- */
+// The Big Dipper's seven stars, one per node. `cos init` takes Megrez, where
+// the bowl meets the handle — the only star with three connections.
 const BIG_DIPPER: StarDef[] = [
   {
     id: 'megrez',

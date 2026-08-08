@@ -2,10 +2,8 @@ import type { ChatMessage } from '@/lib/stores/chat';
 import { cn } from '@/lib/utils';
 import { MessageContent } from './MessageContent';
 
-/** User messages align right in the primary color, matching the accent used
- * everywhere else in the dashboard; assistant replies align left in a
- * neutral card tone — the same left/right + color split most chat UIs use,
- * so the distinction reads at a glance without needing a label. */
+/** Left/right + color split, the same convention most chat UIs use, so the
+ * distinction reads at a glance without needing a label. */
 export function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'USER';
 

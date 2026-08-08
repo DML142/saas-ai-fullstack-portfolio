@@ -6,17 +6,8 @@ import { Copy, Check } from 'lucide-react';
 const COMMAND = 'npm i -g coscode';
 const COPIED_RESET_MS = 1500;
 
-/**
- * Clipboard fallback for when `navigator.clipboard` is unavailable — an
- * insecure context (e.g. testing over a LAN IP like `http://192.168.x.x`) or
- * Safari's partial support. Copies via a hidden textarea and `execCommand`.
- *
- * `readonly` + `focus({ preventScroll: true })` stop mobile browsers from
- * opening the virtual keyboard and auto-scrolling the page on focus; pinning
- * it at `top:0; left:0` with `opacity:0` (not shoved off-screen) keeps its
- * position unambiguous. `setSelectionRange` is used over `.select()`, which
- * Safari doesn't reliably apply to a readonly textarea.
- */
+/** Clipboard fallback for when `navigator.clipboard` is unavailable — an
+ * insecure context or Safari's partial support. Copies via a hidden textarea. */
 function legacyCopy(text: string) {
   const el = document.createElement('textarea');
   el.value = text;

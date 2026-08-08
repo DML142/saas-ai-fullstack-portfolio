@@ -49,9 +49,8 @@ export class BillingService {
   }
 
   async createCheckoutSession(userId: string, tier: PaidTier): Promise<string> {
-    // An already-subscribed user changes plans via the billing portal, not a
-    // second checkout — a new Checkout session would create a parallel
-    // subscription and double-bill them.
+    // Plan changes go through the billing portal, not a second checkout —
+    // that would create a parallel subscription and double-bill the user.
     const currentTier = await this.getEffectiveTier(userId);
     if (currentTier !== SubscriptionTier.FREE) {
       return this.createPortalSession(userId);

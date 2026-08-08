@@ -72,11 +72,8 @@ function LoginInner() {
         },
       );
 
-      // Fail-open safety net: the reveal hides the form and only the tween
-      // brings it back, but GSAP's tween advances on requestAnimationFrame,
-      // which pauses for a backgrounded tab. setTimeout still fires there, so
-      // it forces the visible state if the tween hasn't finished; a no-op on
-      // normal foreground loads.
+      // Fail-open safety net: GSAP's tween pauses on a backgrounded tab and
+      // could strand the reveal hidden; setTimeout still fires and forces it visible.
       const failsafe = window.setTimeout(() => {
         if (tween.progress() < 1 && formRef.current) {
           gsap.set(groups, { clearProps: 'visibility,opacity,transform' });

@@ -4,14 +4,8 @@ import { cn } from '@/lib/utils';
  * the cosmic token rather than hardcoded, so it tracks the palette. */
 const LEDGE = 'color-mix(in oklab, var(--color-cosmic) 55%, black)';
 
-/**
- * Deliberately NOT a variant on the shared `Button`.
- *
- * This button presses in on hover rather than click — the inverse of the usual
- * affordance, kept local so it doesn't leak into the shared `Button` every
- * other CTA relies on. Pure CSS; `motion-reduce:transition-none` keeps the
- * state change but drops the animation.
- */
+/** Deliberately NOT a variant on the shared `Button` — presses in on hover
+ * rather than click, kept local so that doesn't leak into every other CTA. */
 export function PlanButton({
   children,
   className,
@@ -35,33 +29,29 @@ export function PlanButton({
       style={{ ['--ledge' as string]: LEDGE }}
       className={cn(
         'group relative isolate w-full overflow-hidden rounded-xl px-6 py-3 font-medium text-ink',
-        'bg-gradient-to-b from-cosmic-light to-cosmic',
+        'bg-linear-to-b from-cosmic-light to-cosmic',
         'disabled:pointer-events-none disabled:opacity-50',
-        // Resting: popped forward — a solid ledge beneath plus a cast shadow.
         // `perspective()` is chained into this element's own `transform` (not
-        // the parent-oriented Tailwind `perspective-*` utility) to give
-        // `rotateX` a vanishing point, else it just looks like a vertical squash.
-        '[transform:perspective(500px)_rotateX(0deg)_translateY(0px)] shadow-[0_4px_0_0_var(--ledge),0_7px_14px_-3px_rgba(0,0,0,0.65)]',
+        // the parent-oriented Tailwind utility) so `rotateX` gets a vanishing point.
+        'transform-[perspective(500px)_rotateX(0deg)_translateY(0px)] shadow-[0_4px_0_0_var(--ledge),0_7px_14px_-3px_rgba(0,0,0,0.65)]',
         'transition-[transform,box-shadow,filter] duration-150 ease-out motion-reduce:transition-none',
         // Hover: tips back (rotateX) and sinks toward the surface as the ledge
         // shrinks; the fill brightens so it reads as lighting up, not just moving.
-        'hover:[transform:perspective(500px)_rotateX(-6deg)_translateY(3px)] hover:brightness-115 hover:shadow-[0_1px_0_0_var(--ledge),0_2px_6px_-2px_rgba(0,0,0,0.5)]',
+        'hover:transform-[perspective(500px)_rotateX(-6deg)_translateY(3px)] hover:brightness-115 hover:shadow-[0_1px_0_0_var(--ledge),0_2px_6px_-2px_rgba(0,0,0,0.5)]',
         // Click sinks deeper with a sharper tilt, so a press stays distinct
         // from a hover.
-        'active:[transform:perspective(500px)_rotateX(-10deg)_translateY(5px)] active:brightness-95 active:shadow-[0_0_0_0_var(--ledge),0_1px_2px_-1px_rgba(0,0,0,0.45)]',
+        'active:transform-[perspective(500px)_rotateX(-10deg)_translateY(5px)] active:brightness-95 active:shadow-[0_0_0_0_var(--ledge),0_1px_2px_-1px_rgba(0,0,0,0.45)]',
         // Keyboard users never trigger :hover, so focus gets its own signal.
         'focus-visible:ring-cosmic-light focus-visible:ring-offset-bg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
         className,
       )}
     >
-      {/* Sheen: a soft diagonal highlight parked off the left edge that sweeps
-          across on hover. Pure CSS transform, no JS reset. `motion-reduce`
-          parks it off-screen instead of sweeping. */}
+      {/* Sheen: a diagonal highlight parked off the left edge, sweeps on hover. */}
       <span
         aria-hidden
         className={cn(
           'pointer-events-none absolute inset-y-0 -left-full -z-10 w-full',
-          'bg-gradient-to-r from-transparent via-white/25 to-transparent',
+          'bg-linear-to-r from-transparent via-white/25 to-transparent',
           'transition-transform duration-500 ease-out',
           'group-hover:translate-x-[200%] motion-reduce:hidden motion-reduce:transition-none',
         )}

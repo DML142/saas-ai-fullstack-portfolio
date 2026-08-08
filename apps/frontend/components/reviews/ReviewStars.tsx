@@ -11,9 +11,8 @@ gsap.registerPlugin(useGSAP);
 const HOLD_MS = 5200;
 const FADE_S = 0.7;
 
-/** Lit vs. resting appearance of a star. Resting is dimmed, never hidden — but
- * not so dim it reads as the ambient field behind it rather than a review
- * waiting its turn. */
+/** Resting is dimmed, never hidden — not so dim it reads as the ambient
+ * field rather than a review waiting its turn. */
 const LIT = { scale: 1, autoAlpha: 1 };
 const RESTING = { scale: 0.6, autoAlpha: 0.5 };
 
@@ -208,9 +207,8 @@ export function ReviewStars() {
           so the quote never moves as the active star changes. */}
       <div className="relative h-28 md:h-32">
         {REVIEWS.map((review, i) => (
-          // Two spans: the outer owns the centring transform (never animates),
-          // the inner is GSAP's target. Collapsed into one, GSAP's `scale`
-          // writes to `transform` would fight the `-50%` centring.
+          // Two spans: the outer owns the centring transform, the inner is
+          // GSAP's target — collapsed into one, `scale` would fight `-50%`.
           <span
             key={review.id}
             className="absolute -translate-x-1/2 -translate-y-1/2"

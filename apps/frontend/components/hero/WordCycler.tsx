@@ -12,10 +12,8 @@ const WORDS = ['FASTER', 'SAFER', 'SMARTER', 'FEARLESSLY'];
 const HOLD_MS = 2600;
 const TRANSITION_S = 0.6;
 
-// Below this width, "BUILD" and the cycling word stack on two lines (flex-col
-// below `sm`, flex-row above) instead of wrapping by word length — conditional
-// wrapping moved the word box between words and broke the slide. Matches
-// Tailwind's `sm` so the CSS layout and JS animation-axis flip at one width.
+// Matches Tailwind's `sm` so the CSS layout (flex-col/flex-row) and the JS
+// animation axis flip at the same width.
 const MOBILE_QUERY = '(max-width: 639px)';
 
 export function WordCycler() {
@@ -40,9 +38,8 @@ export function WordCycler() {
       const activeEl = wordRefs.current[index];
       if (!container || !activeEl) return;
 
-      // Desktop moves upward (enter below, exit above); mobile moves rightward
-      // (enter left, exit right). Every branch sets both axes so resizing
-      // across the breakpoint never leaves a stale offset on the other axis.
+      // Desktop moves upward, mobile moves rightward — every branch sets both
+      // axes so resizing across the breakpoint never leaves a stale offset.
       const restingAxis = isMobile
         ? { xPercent: -100, yPercent: 0 }
         : { xPercent: 0, yPercent: 100 };
@@ -59,7 +56,6 @@ export function WordCycler() {
         if (!el) return;
 
         if (i === index) {
-          // the word becoming active
           if (reducedMotion || prevIndex === index) {
             gsap.set(el, { ...settled, autoAlpha: 1 });
           } else {
@@ -75,7 +71,6 @@ export function WordCycler() {
             );
           }
         } else if (i === prevIndex && prevIndex !== index) {
-          // the word stepping out
           if (reducedMotion) {
             gsap.set(el, { ...exitTo, autoAlpha: 0 });
           } else {
@@ -87,14 +82,12 @@ export function WordCycler() {
             });
           }
         } else {
-          // resting, waiting its turn, parked at the point it will enter from
           gsap.set(el, { ...restingAxis, autoAlpha: 0 });
         }
       });
 
-      // Measure the incoming word's natural width and animate the container to
-      // match, so the box resizes in sync with the 0.6s slide instead of
-      // snapping instantly and jumping.
+      // Animate the container to the incoming word's width so it resizes in
+      // sync with the slide instead of snapping instantly.
       const targetWidth = activeEl.getBoundingClientRect().width;
       if (reducedMotion || prevIndex === index) {
         gsap.set(container, { width: targetWidth });

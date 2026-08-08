@@ -1,9 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// No `webServer` here on purpose — these specs exercise the checkout→
-// webhook and chat→WebSocket-reply paths, which need the backend, Postgres,
-// Redis, and the Stripe CLI forwarder all present. Only the full
-// `docker compose up` stack provides that; a bare `next dev` can't stand in.
+// No `webServer` here on purpose — these specs need the backend, Postgres,
+// Redis, and the Stripe CLI forwarder, which only `docker compose up` provides.
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,

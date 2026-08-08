@@ -36,7 +36,7 @@ export class ChatService {
   }
 
   async renameWorkspace(userId: string, workspaceId: string, name: string) {
-    //using updateMany cuz delete only support find by id
+    // updateMany lets the where clause scope by userId; update only takes a unique id
     const result = await this.prisma.workspace.updateMany({
       where: { id: workspaceId, userId },
       data: { name },

@@ -2,15 +2,9 @@ import Link from 'next/link';
 import { AmbientStarField } from '@/components/features/AmbientStarField';
 import { PlanCard, type Plan } from './PlanCard';
 
-/**
- * Declared in price-ascending order, which is also DOM order, so keyboard and
- * screen-reader users move through the plans by price. `orderClass` reorders
- * the visual columns on desktop only (Lite, Ultra, Pro), putting Ultra in the
- * centre; on mobile it's a single column following DOM order.
- *
- * These names are marketing labels only — they don't map onto the backend's
- * RBAC roles (USER / PREMIUM / ADMIN); wiring tiers to gating is separate work.
- */
+// Declared in price-ascending DOM order for keyboard/screen-reader users;
+// `orderClass` reorders only the visual columns on desktop, centring Ultra.
+// Names are marketing labels only — they don't map onto the backend's RBAC roles.
 const PLANS: Plan[] = [
   {
     id: 'lite',
@@ -57,12 +51,8 @@ const PLANS: Plan[] = [
 
 export function PricingSection() {
   return (
-    // No ChromaticAberration here (unlike the hero) — CLAUDE.md scopes that
-    // effect to the hero specifically, and wrapping this whole section in it
-    // previously broke rendering in Firefox: the section's own SVG filter
-    // surface conflicts with the Ultra card's `backdrop-blur` + nested
-    // UltraGlow filter, and Firefox's compositor drops the DOM text entirely
-    // where Chromium tolerates the same nesting.
+    // No ChromaticAberration here — nesting it broke Firefox, whose compositor
+    // drops the DOM text where the Ultra card's own filters overlap it.
     <section id="pricing" className="relative overflow-hidden bg-bg">
       <AmbientStarField />
 
@@ -77,9 +67,7 @@ export function PricingSection() {
         </div>
 
         {/* Ultra's track is wider (1.2fr vs 1fr) — a real layout size, not a
-            `transform: scale()` (which would distort UltraGlow's strokes and
-            blur). `order` places the wide track under the visually centred
-            card (Ultra), regardless of DOM order. */}
+            `transform: scale()`, which would distort UltraGlow's strokes. */}
         <ul className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-6 md:grid-cols-[1fr_1.2fr_1fr] md:gap-5">
           {PLANS.map((plan) => (
             <PlanCard key={plan.id} plan={plan} />
