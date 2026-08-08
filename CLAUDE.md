@@ -47,10 +47,12 @@ not a progress log.
   feature branch, then opens a PR. (The previous "AI gives code in chat, I
   transcribe it by hand" model from the learning phase is retired — the goal
   now is shipping, not line-by-line transcription.)
-- **Commit messages:** short, simple, imperative, in English. No elaborate
-  multi-paragraph bodies. See Git Commits below for authorship rules.
-- **Pull requests:** minimal description, little to no inline review
-  comments. Keep each PR scoped to the one feature/branch it belongs to.
+- **Commit messages:** short, simple, imperative, in English, max 1-2 lines
+  total. No elaborate multi-paragraph bodies. See Git Commits below for
+  authorship rules.
+- **Pull requests:** minimal description, no inline review comments — if one
+  is truly unavoidable, max 1-2 lines. Keep each PR scoped to the one
+  feature/branch it belongs to.
 - **Communicate with the user in Russian.** Code, comments, commit messages,
   and PR text stay in English.
 
