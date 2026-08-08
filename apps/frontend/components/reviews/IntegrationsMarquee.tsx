@@ -11,12 +11,8 @@ gsap.registerPlugin(useGSAP);
  * stays constant regardless of how many copies a screen width needs. */
 const SPEED_PX_S = 55;
 
-/**
- * The tools `cos init` wires in — the same names plotted in the Big Dipper
- * above. `tint` is the colour each wordmark reveals on hover; wordmarks are
- * typographic (names, not logo art) since the project has no rights to embed
- * real brand marks.
- */
+// Typographic (names, not logo art) — the project has no rights to embed
+// real brand marks.
 const INTEGRATIONS = [
   { name: 'CodeRabbit', tint: '#ff7043' },
   { name: 'MCP', tint: '#7c9cff' },
@@ -31,7 +27,7 @@ const INTEGRATIONS = [
 function Wordmark({ name, tint }: { name: string; tint: string }) {
   return (
     <span
-      className="shrink-0 px-8 font-display text-2xl whitespace-nowrap text-ink/40 transition-colors duration-300 hover:text-[var(--tint)] md:text-3xl"
+      className="shrink-0 px-8 font-display text-2xl whitespace-nowrap text-ink/40 transition-colors duration-300 hover:text-(--tint) md:text-3xl"
       style={{ '--tint': tint } as React.CSSProperties}
     >
       {name}
@@ -99,9 +95,8 @@ export function IntegrationsMarquee() {
         repeat: -1,
       });
 
-      // Pause the shared tween on hover so a name doesn't slide away while
-      // you read it. Listeners sit on the track, so crossing between names
-      // doesn't flicker pause/resume.
+      // Listeners sit on the track, not each name, so crossing between
+      // names doesn't flicker pause/resume.
       const onEnter = contextSafe(() => loop.pause());
       const onLeave = contextSafe(() => loop.play());
       track.addEventListener('pointerenter', onEnter);
@@ -129,7 +124,7 @@ export function IntegrationsMarquee() {
     // Masked at both edges so wordmarks dissolve instead of being cut off.
     <div
       ref={scopeRef}
-      className="w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
+      className="w-full overflow-hidden mask-[linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
     >
       <div ref={trackRef} className="flex w-max">
         {Array.from({ length: copies }, (_, copyIndex) => (
